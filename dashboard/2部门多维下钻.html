@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>集团模型网关用量管理平台 · MaaS</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style id="styleBase">
+:root{
+  --primary:#5b6cff; --primary-2:#7c5cff; --primary-soft:#eef0ff;
+  --accent:#10b981;
+  --success:#10b981; --warning:#f59e0b; --danger:#ef4444;
+  --bg:#f5f7fb; --surface:#fff; --surface-2:#fafbfd;
+  --text:#0f172a; --text-2:#475569; --text-3:#94a3b8;
+  --border:#e5e7eb; --border-2:#f1f5f9;
+  --shadow:0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.03);
+  --shadow-lg:0 10px 25px rgba(15,23,42,.08);
+  --radius:10px; --radius-lg:14px;
+  --side-w:240px; --top-h:60px;
+  --gap:16px; --gap-lg:20px; --gap-xl:24px;
+}
+[data-theme="dark"]{
+  --bg:#0b1222; --surface:#111a2e; --surface-2:#17223b;
+  --text:#f1f5f9; --text-2:#a6b3c8; --text-3:#6b7a93;
+  --border:#243147; --border-2:#1b2539; --primary-soft:#1e2a52;
+  --shadow:0 1px 3px rgba(0,0,0,.35); --shadow-lg:0 10px 25px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+a{color:inherit;text-decoration:none}
+code{font:12px/1.5 Menlo,Consolas,monospace;background:var(--border-2);padding:1px 6px;border-radius:4px}
+
+#app{
+  display:grid;
+  grid-template-columns:var(--side-w) 1fr;
+  grid-template-rows:var(--top-h) 1fr;
+  grid-template-areas:"side top" "side main";
+  min-height:100vh;
+}
+
+/* ============ 顶栏 ============ */
+.topbar{
+  grid-area:top;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 var(--gap-xl);gap:var(--gap);
+  position:sticky;top:0;z-index:10;
+  backdrop-filter:saturate(180%) blur(6px);
+}
+.topbar .page-title{display:flex;flex-direction:column;gap:2px;line-height:1.25}
+.topbar .page-title h1{font-size:16px;font-weight:600;letter-spacing:.2px;color:var(--text)}
+.topbar .page-title .sub{font-size:12px;color:var(--text-3)}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+
+/* ============ 侧栏 ============ */
+.sidebar{
+  grid-area:side;background:var(--surface);
+  border-right:1px solid var(--border);
+  padding:20px 0 16px;
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow:hidden;
+}
+.sidebar .logo{
+  display:flex;align-items:center;gap:12px;
+  padding:0 20px 18px;margin-bottom:6px;
+  border-bottom:1px solid var(--border-2);
+}
+.sidebar .logo-mark{
+  width:40px;height:40px;flex:0 0 40px;
+  border-radius:10px;
+  box-shadow:0 4px 12px rgba(91,108,255,.25);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.sidebar .logo-mark svg{display:block;width:100%;height:100%}
+.sidebar .logo-txt{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.sidebar .logo-title{
+  font-size:15px;font-weight:700;letter-spacing:.4px;
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-2) 55%,var(--accent) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  white-space:nowrap;
+}
+.sidebar .logo-sub{
+  font-size:11px;color:var(--text-3);font-weight:400;margin-top:1px;
+  letter-spacing:.3px;white-space:nowrap;
+}
+.sidebar nav{padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.sidebar .navItem{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;margin:0;
+  color:var(--text-2);cursor:pointer;
+  border-radius:8px;
+  font-size:13.5px;font-weight:500;
+  transition:background .15s,color .15s;
+}
+.sidebar .navItem:hover{background:var(--surface-2);color:var(--text)}
+.sidebar .navItem.active{
+  background:linear-gradient(90deg,var(--primary-soft) 0%,transparent 100%);
+  color:var(--primary);font-weight:600;
+  box-shadow:inset 3px 0 0 var(--primary);
+}
+.sidebar .navItem .ico{width:18px;text-align:center;font-size:15px}
+.sidebar .group{
+  padding:14px 20px 6px;font-size:10.5px;
+  color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;
+}
+.sidebar .side-footer{
+  margin-top:auto;padding:12px 20px;
+  border-top:1px solid var(--border-2);
+  font-size:11px;color:var(--text-3);line-height:1.5;
+}
+
+/* ============ 主内容 ============ */
+.main{grid-area:main;padding:var(--gap-xl);overflow-x:hidden}
+.page-head{margin-bottom:var(--gap-lg)}
+.page-head h2{font-size:20px;font-weight:700;letter-spacing:.2px;margin-bottom:4px}
+.page-head .desc{font-size:13px;color:var(--text-2)}
+
+/* ============ 响应式 ============ */
+@media (max-width:1100px){
+  :root{--side-w:72px}
+  .sidebar .logo-txt,.sidebar .navItem .label,.sidebar .group,.sidebar .side-footer{display:none}
+  .sidebar .logo{justify-content:center;padding:0 0 18px}
+  .sidebar nav{padding:8px 6px}
+  .sidebar .navItem{justify-content:center;padding:11px 0}
+  .sidebar .navItem.active{box-shadow:inset 3px 0 0 var(--primary)}
+}
+@media (max-width:640px){
+  :root{--side-w:0px;--gap-xl:16px}
+  .sidebar{display:none}
+  #app{grid-template-columns:1fr}
+  .topbar{padding:0 14px}
+  .topbar .page-title h1{font-size:15px}
+}
+</style>
+<style id="styleComp">
+.row{display:flex;gap:var(--gap);flex-wrap:wrap}
+.col{flex:1;min-width:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:var(--shadow-lg)}
+.card-pad{padding:20px}
+.card-hd{padding:16px 20px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-hd h3,.card-hd .card-ti{font-size:14.5px;font-weight:600;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+.card-bd{padding:18px 20px}
+.text-2{color:var(--text-2)} .text-3{color:var(--text-3)}
+
+/* KPI 卡 */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--gap);margin-bottom:var(--gap-lg)}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .15s,box-shadow .2s}
+.kpi:hover{transform:translateY(-1px);box-shadow:var(--shadow-lg)}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),var(--primary-2))}
+.kpi.warn::before{background:linear-gradient(90deg,var(--warning),#fbbf24)}
+.kpi.danger::before{background:linear-gradient(90deg,var(--danger),#f87171)}
+.kpi .label{color:var(--text-2);font-size:12px;margin-bottom:10px;display:flex;align-items:center;gap:6px;font-weight:500}
+.kpi .value{font-size:26px;font-weight:700;margin-bottom:6px;font-family:-apple-system,"Segoe UI",sans-serif;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.kpi .delta{font-size:12px;display:flex;align-items:center;gap:6px;color:var(--text-3)}
+.delta.up{color:var(--danger)} .delta.down{color:var(--success)}
+
+/* 图表容器 */
+.chart{width:100%;height:320px}
+.chart-sm{width:100%;height:260px}
+
+/* 控件 */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn.primary:hover{background:#4451d6;color:#fff}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:6px}
+.btn-grp{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.btn-grp button{padding:6px 14px;background:transparent;color:var(--text-2);border:none;cursor:pointer;font-size:13px;border-right:1px solid var(--border);font-weight:500;transition:all .15s}
+.btn-grp button:last-child{border-right:none}
+.btn-grp button:hover{color:var(--primary)}
+.btn-grp button.active{background:var(--primary);color:#fff}
+.input,.select{padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;min-width:140px;transition:border-color .15s,box-shadow .15s}
+.input:focus,.select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(91,108,255,.12)}
+
+/* 表格 */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th,.tbl td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border-2)}
+.tbl th{background:var(--surface-2);color:var(--text-2);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap;font-size:12px;letter-spacing:.2px}
+.tbl th:hover{color:var(--primary)}
+.tbl tbody tr{transition:background .12s}
+.tbl tr:hover td{background:var(--surface-2)}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums;font-family:-apple-system,"Segoe UI",sans-serif}
+.tbl .linkRow{color:var(--primary);cursor:pointer;font-weight:500}
+
+/* 面包屑 */
+.crumbs{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px;color:var(--text-2);flex-wrap:wrap}
+.crumbs a{color:var(--primary);cursor:pointer;font-weight:500}
+.crumbs a:hover{text-decoration:underline}
+.crumbs .sep{color:var(--text-3)}
+
+/* 告警徽章 */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.badge.ok{background:#d1fae5;color:#065f46}
+.badge.warn{background:#fef3c7;color:#92400e}
+.badge.danger{background:#fee2e2;color:#991b1b}
+[data-theme="dark"] .badge.ok{background:#064e3b;color:#6ee7b7}
+[data-theme="dark"] .badge.warn{background:#78350f;color:#fcd34d}
+[data-theme="dark"] .badge.danger{background:#7f1d1d;color:#fca5a5}
+
+/* 工具条 */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:var(--gap-lg);padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.toolbar .spacer{flex:1}
+
+/* toast */
+.toast{position:fixed;top:20px;right:20px;background:var(--surface);border-left:4px solid var(--success);padding:10px 16px;border-radius:6px;box-shadow:var(--shadow-lg);z-index:999;font-size:13px;animation:slide .3s}
+.toast.error{border-left-color:var(--danger)}
+@keyframes slide{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script id="mockData">
+/* ========== Mock 数据生成器 ========== */
+const SERVICE_TYPES = [
+  {id:'llm-chat',  name:'LLM 对话',    unit:'千 tokens', price:0.012},
+  {id:'llm-embed', name:'向量嵌入',    unit:'千 tokens', price:0.0007},
+  {id:'image-gen', name:'图像生成',    unit:'张',        price:0.05},
+  {id:'asr',       name:'语音识别',    unit:'分钟',      price:0.06},
+  {id:'tts',       name:'语音合成',    unit:'万字符',    price:0.18}
+];
+
+const DEPARTMENTS = [
+  {id:'jd-retail',   name:'京东零售',   budget:180000,
+    children:[
+      {id:'jdr-search',  name:'搜索推荐部'},
+      {id:'jdr-mall',    name:'主站商城部'},
+      {id:'jdr-supply',  name:'供应链中台'}
+    ]},
+  {id:'jd-tech',     name:'京东科技',   budget:150000,
+    children:[
+      {id:'jdt-ai',      name:'AI 平台部'},
+      {id:'jdt-cloud',   name:'京东云事业部'},
+      {id:'jdt-fintech', name:'数字金融部'}
+    ]},
+  {id:'jd-logistics',name:'京东物流',   budget:90000,
+    children:[
+      {id:'jdl-ops',     name:'仓配运营部'},
+      {id:'jdl-route',   name:'智能路由部'}
+    ]},
+  {id:'jd-health',   name:'京东健康',   budget:60000,
+    children:[
+      {id:'jdh-clinic',  name:'互联网医院'},
+      {id:'jdh-pharma',  name:'医药零售部'}
+    ]},
+  {id:'jd-industry', name:'京东工业',   budget:40000,
+    children:[{id:'jdi-mro',  name:'MRO 工业品事业部'}]}
+];
+
+const BUSINESS_LINES = [
+  {id:'bl-search',   name:'京东搜索',         deptId:'jdr-search'},
+  {id:'bl-recom',    name:'商品推荐',         deptId:'jdr-search'},
+  {id:'bl-mall',     name:'主站交易',         deptId:'jdr-mall'},
+  {id:'bl-supply',   name:'供应链智能',       deptId:'jdr-supply'},
+  {id:'bl-ai-plat',  name:'言犀 AI 平台',     deptId:'jdt-ai'},
+  {id:'bl-cloud',    name:'京东云服务',       deptId:'jdt-cloud'},
+  {id:'bl-fintech',  name:'数字金融风控',     deptId:'jdt-fintech'},
+  {id:'bl-warehouse',name:'智能仓储',         deptId:'jdl-ops'},
+  {id:'bl-route',    name:'路径规划',         deptId:'jdl-route'},
+  {id:'bl-clinic',   name:'在线问诊',         deptId:'jdh-clinic'},
+  {id:'bl-pharma',   name:'药品零售',         deptId:'jdh-pharma'},
+  {id:'bl-mro',      name:'工业品采购',       deptId:'jdi-mro'}
+];
+
+const MODEL_CATALOG = [
+  {id:'deepseek-v3',     name:'DeepSeek-V3',     vendor:'DeepSeek',  modality:'text',        priceIn:0.002, priceOut:0.008, contextK:128},
+  {id:'deepseek-r1',     name:'DeepSeek-R1',     vendor:'DeepSeek',  modality:'text',        priceIn:0.004, priceOut:0.016, contextK:64},
+  {id:'glm-4-plus',      name:'GLM-4-Plus',      vendor:'智谱 AI',   modality:'text',        priceIn:0.005, priceOut:0.005, contextK:128},
+  {id:'glm-4v',          name:'GLM-4V',          vendor:'智谱 AI',   modality:'multimodal',  priceIn:0.05,  priceOut:0.05,  contextK:8},
+  {id:'kimi-moonshot-v1',name:'Kimi-MoonshotV1', vendor:'月之暗面',   modality:'text',        priceIn:0.012, priceOut:0.012, contextK:128},
+  {id:'kimi-k2',         name:'Kimi-K2',         vendor:'月之暗面',   modality:'text',        priceIn:0.004, priceOut:0.016, contextK:128},
+  {id:'qwen-max',        name:'Qwen-Max',        vendor:'阿里通义',   modality:'text',        priceIn:0.02,  priceOut:0.06,  contextK:32},
+  {id:'doubao-pro',      name:'豆包 Pro',         vendor:'字节火山',   modality:'text',        priceIn:0.0008,priceOut:0.002, contextK:256},
+  {id:'yanxi-llm',       name:'言犀大模型',       vendor:'京东科技',   modality:'text',        priceIn:0.001, priceOut:0.003, contextK:128},
+  {id:'bge-m3',          name:'BGE-M3 Embedding',vendor:'智源研究院', modality:'embedding',   priceIn:0.0005,priceOut:0,     contextK:8}
+];
+function getModel(id){ return MODEL_CATALOG.find(m=>m.id===id); }
+function registerModel(modelDef){ if(!modelDef||!modelDef.id) return false; if(MODEL_CATALOG.find(m=>m.id===modelDef.id)) return false; MODEL_CATALOG.push(modelDef); return true; }
+
+const APP_PREFIXES = ['智能','AI','一键','自动','极速','灵犀','慧眼','妙笔','千问','启明'];
+const APP_SUFFIXES = ['助手','引擎','分析','报表','客服','摘要','搜索','问答','审核','翻译'];
+function generateApps(){
+  const apps = [];
+  let counter = 1000;
+  BUSINESS_LINES.forEach(bl=>{
+    const n = 3 + Math.floor(Math.random()*4);
+    for(let i=0;i<n;i++){
+      apps.push({
+        id:'app-'+(counter++),
+        name: APP_PREFIXES[Math.floor(Math.random()*APP_PREFIXES.length)] + APP_SUFFIXES[Math.floor(Math.random()*APP_SUFFIXES.length)],
+        blId: bl.id, deptId: bl.deptId,
+        owner: ['张磊','王芳','李娜','刘强','陈静','赵宇'][Math.floor(Math.random()*6)],
+        serviceType: SERVICE_TYPES[Math.floor(Math.random()*SERVICE_TYPES.length)].id,
+        createdAt: Date.now() - Math.floor(Math.random()*365)*86400000
+      });
+    }
+  });
+  return apps;
+}
+const APPS = generateApps();
+
+function pickRandom(arr, n){ const copy = arr.slice(); const out = []; for(let i=0;i<n && copy.length;i++){ out.push(copy.splice(Math.floor(Math.random()*copy.length),1)[0]); } return out; }
+function genAppModelUsage(days){
+  const map = {};
+  const now = new Date(); now.setHours(0,0,0,0);
+  APPS.forEach(app=>{
+    const modelCount = 2 + Math.floor(Math.random()*3);
+    const models = pickRandom(MODEL_CATALOG, modelCount);
+    map[app.id] = models.map(m=>{
+      const isEmbed = m.modality === 'embedding';
+      const baseCalls = 800 + Math.floor(Math.random()*8000);
+      const dailyPoints = [];
+      let sumCalls=0, sumTokensIn=0, sumTokensOut=0, sumCost=0;
+      for(let i=days-1;i>=0;i--){
+        const d = new Date(now.getTime() - i*86400000);
+        const isWeekend = d.getDay()===0||d.getDay()===6;
+        const factor = isWeekend ? 0.45 : 1.0;
+        const noise = 0.7 + Math.random()*0.6;
+        const calls = Math.max(1, Math.round(baseCalls * factor * noise / days * 2));
+        const tokensIn  = calls * (isEmbed ? (200 + Math.random()*400) : (300 + Math.random()*700));
+        const tokensOut = isEmbed ? 0 : calls * (150 + Math.random()*500);
+        const cost = +((tokensIn/1000)*m.priceIn + (tokensOut/1000)*m.priceOut).toFixed(2);
+        dailyPoints.push({ date: d.toISOString().slice(0,10), calls, tokensIn: Math.round(tokensIn), tokensOut: Math.round(tokensOut), cost });
+        sumCalls+=calls; sumTokensIn+=tokensIn; sumTokensOut+=tokensOut; sumCost+=cost;
+      }
+      return { modelId:m.id, modelName:m.name, vendor:m.vendor, modality:m.modality, priceIn:m.priceIn, priceOut:m.priceOut, calls:sumCalls, tokensIn:Math.round(sumTokensIn), tokensOut:Math.round(sumTokensOut), tokensTotal:Math.round(sumTokensIn+sumTokensOut), cost:+sumCost.toFixed(2), avgCostPerCall:+(sumCost/Math.max(1,sumCalls)).toFixed(4), reqPerMin:+(sumCalls/(days*24*60)).toFixed(2), dailyPoints };
+    });
+  });
+  return map;
+}
+const APP_MODEL_USAGE = genAppModelUsage(30);
+function getAppModels(appId){ return (APP_MODEL_USAGE[appId] || []).slice().sort((a,b)=>b.cost - a.cost); }
+function getAppModelDailyMerged(appId){ const models = APP_MODEL_USAGE[appId]||[]; const byDate={}; models.forEach(m=>{ m.dailyPoints.forEach(p=>{ if(!byDate[p.date]) byDate[p.date]={date:p.date,calls:0,cost:0}; byDate[p.date].calls+=p.calls; byDate[p.date].cost+=p.cost; }); }); return Object.values(byDate).sort((a,b)=>a.date.localeCompare(b.date)); }
+
+function genTimeSeries(days){
+  const now = new Date(); now.setHours(0,0,0,0);
+  return APPS.map(app=>{
+    const st = SERVICE_TYPES.find(s=>s.id===app.serviceType);
+    const baseUsage = 50 + Math.random()*500;
+    const points = [];
+    for(let i=days-1;i>=0;i--){
+      const d = new Date(now.getTime() - i*86400000);
+      const isWeekend = d.getDay()===0||d.getDay()===6;
+      const factor = isWeekend ? 0.4 : 1.0;
+      const noise = 0.7 + Math.random()*0.6;
+      const usage = +(baseUsage * factor * noise).toFixed(2);
+      points.push({date:d.toISOString().slice(0,10), usage, cost:+(usage*st.price).toFixed(2), unit:st.unit, isWeekend});
+    }
+    return {appId:app.id, points};
+  });
+}
+function genHourSeries(){ return APPS.map(app=>{ const st = SERVICE_TYPES.find(s=>s.id===app.serviceType); const baseUsage = 5 + Math.random()*40; const points = []; for(let h=0;h<24;h++){ const peak = (h>=9&&h<=22) ? 1.4 : 0.5; const noise = 0.7 + Math.random()*0.6; const usage = +(baseUsage * peak * noise).toFixed(2); points.push({hour:h, usage, cost:+(usage*st.price).toFixed(2)}); } return {appId:app.id, points}; }); }
+const TS_30D = genTimeSeries(30);
+const TS_HOUR = genHourSeries();
+const ROLES = { admin:{name:'管理员',scope:'all',canSeeBudget:true}, director:{name:'部门主管',scope:'dept:jd-tech',canSeeBudget:true}, pm:{name:'业务负责人',scope:'bl:bl-search',canSeeBudget:false}, viewer:{name:'只读用户',scope:'all',canSeeBudget:false} };
+const THRESHOLDS = { warn: 0.7, danger: 0.9 };
+function flatDepts(){ const out=[]; DEPARTMENTS.forEach(d=>{ out.push({...d, level:0}); (d.children||[]).forEach(c=> out.push({...c, parentId:d.id, level:1, budget: Math.round(d.budget/(d.children.length))})); }); return out; }
+const DEPTS_FLAT = flatDepts();
+function getDept(id){ return DEPTS_FLAT.find(d=>d.id===id); }
+function getBL(id){ return BUSINESS_LINES.find(b=>b.id===id); }
+function getApp(id){ return APPS.find(a=>a.id===id); }
+function getServiceType(id){ return SERVICE_TYPES.find(s=>s.id===id); }
+</script>
+<script id="appCore">
+const STATE = { theme: localStorage.getItem('mu_theme') || 'light', role: localStorage.getItem('mu_role') || 'admin', granularity: 'day', page: 'drill', drill: { level:'dept', deptId:null, blId:null, appId:null }, modelFilter: { keyword:'' }, modelDetailFilters: { vendor: '' }, autoRefresh: false, refreshTimer: null, charts: [], globalFilters: { deptName: '', vendor: '', modelName: '' } };
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+function h(tag, attrs={}, ...children){ const el = document.createElement(tag); Object.entries(attrs||{}).forEach(([k,v])=>{ if(k==='class') el.className = v; else if(k==='style') el.style.cssText = v; else if(k==='innerHTML') el.innerHTML = v; else if(k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v); else if(v!=null && v!==false) el.setAttribute(k, v); }); children.flat().forEach(c=>{ if(c==null||c===false) return; el.appendChild(typeof c==='string'?document.createTextNode(c):c); }); return el; }
+function fmtNum(n){ return Number(n).toLocaleString('zh-CN',{maximumFractionDigits:2}); }
+function fmtMoney(n){ return '¥' + fmtNum(n); }
+function toast(msg, type){ const t = h('div',{class:'toast'+(type==='error'?' error':'')}, msg); document.body.appendChild(t); setTimeout(()=>t.remove(), 2500); }
+function daysOf(g){ return g==='day'?1 : g==='week'?7 : 30; }
+function aggregateAll(){ const days = daysOf(STATE.granularity); if(STATE.granularity==='day') return TS_HOUR.map(s=>{ const total = s.points.reduce((a,p)=>({usage:a.usage+p.usage, cost:a.cost+p.cost}),{usage:0,cost:0}); return {appId:s.appId, usage:+total.usage.toFixed(2), cost:+total.cost.toFixed(2), points:s.points}; }); return TS_30D.map(s=>{ const slice = s.points.slice(-days); const total = slice.reduce((a,p)=>({usage:a.usage+p.usage, cost:a.cost+p.cost}),{usage:0,cost:0}); return {appId:s.appId, usage:+total.usage.toFixed(2), cost:+total.cost.toFixed(2), points:slice}; }); }
+function filterByRole(aggs){ const role = ROLES[STATE.role]; if(role.scope==='all') return aggs; if(role.scope.startsWith('dept:')){ const deptId = role.scope.slice(5); const subDeptIds = [deptId, ...DEPTS_FLAT.filter(d=>d.parentId===deptId).map(d=>d.id)]; return aggs.filter(a=> subDeptIds.includes(getApp(a.appId).deptId)); } if(role.scope.startsWith('bl:')){ const blId = role.scope.slice(3); return aggs.filter(a=> getApp(a.appId).blId===blId); } return aggs; }
+function applyGlobalFilters(appsList){ const {deptName, vendor, modelName} = STATE.globalFilters; let filtered = [...appsList];
+  if(deptName.trim()){
+    const kw = deptName.trim().toLowerCase();
+    filtered = filtered.filter(app=>{
+      const dept = getDept(app.deptId);
+      const parentDept = dept?.parentId ? getDept(dept.parentId) : dept;
+      const deptNameStr = parentDept?.name || '';
+      return deptNameStr.toLowerCase().includes(kw);
+    });
+  }
+  if(vendor || modelName.trim()){
+    filtered = filtered.filter(app=>{
+      const models = getAppModels(app.id);
+      return models.some(m=>{
+        if(vendor && m.vendor !== vendor) return false;
+        if(modelName.trim() && !m.modelName.toLowerCase().includes(modelName.trim().toLowerCase())) return false;
+        return true;
+      });
+    });
+  }
+  return filtered;
+}
+function getModelCountForDept(deptId){ 
+  const appsInDept = APPS.filter(app=>{
+    const topDept = DEPTS_FLAT.find(d=>d.id===app.deptId);
+    const parentId = topDept?.parentId || topDept?.id;
+    return parentId === deptId;
+  });
+  const modelSet = new Set();
+  appsInDept.forEach(app=>{
+    const models = getAppModels(app.id);
+    models.forEach(m=>modelSet.add(m.modelId));
+  });
+  return modelSet.size;
+}
+function getModelCountForBl(blId){ 
+  const appsInBl = APPS.filter(app=>app.blId === blId);
+  const modelSet = new Set();
+  appsInBl.forEach(app=>{
+    const models = getAppModels(app.id);
+    models.forEach(m=>modelSet.add(m.modelId));
+  });
+  return modelSet.size;
+}
+function groupByDeptWithFilters(aggs, filteredAppIds){
+  const map={};
+  aggs.forEach(a=>{
+    if(!filteredAppIds.has(a.appId)) return;
+    const app=getApp(a.appId);
+    const topDept=DEPTS_FLAT.find(d=>d.id===app.deptId);
+    const parentId=topDept?.parentId||topDept?.id;
+    if(!map[parentId]) map[parentId]={id:parentId,name:getDept(parentId).name,usage:0,cost:0,count:0};
+    map[parentId].usage+=a.usage;
+    map[parentId].cost+=a.cost;
+    map[parentId].count++;
+  });
+  const result = Object.values(map).map(x=>({...x, usage:+x.usage.toFixed(2), cost:+x.cost.toFixed(2), modelCount: getModelCountForDept(x.id)}));
+  return result.sort((a,b)=>b.cost-a.cost);
+}
+function groupByBLWithFilters(aggs, filteredAppIds, deptId){
+  const map={};
+  aggs.forEach(a=>{
+    if(!filteredAppIds.has(a.appId)) return;
+    const app=getApp(a.appId);
+    const topDept=DEPTS_FLAT.find(d=>d.id===app.deptId);
+    const parentId=topDept?.parentId||topDept?.id;
+    if(parentId !== deptId) return;
+    if(!map[app.blId]) map[app.blId]={id:app.blId,name:getBL(app.blId).name,deptId:app.deptId,usage:0,cost:0,count:0};
+    map[app.blId].usage+=a.usage;
+    map[app.blId].cost+=a.cost;
+    map[app.blId].count++;
+  });
+  const result = Object.values(map).map(x=>({...x, usage:+x.usage.toFixed(2), cost:+x.cost.toFixed(2), modelCount: getModelCountForBl(x.id)}));
+  return result.sort((a,b)=>b.cost-a.cost);
+}
+function applyTheme(){ document.documentElement.setAttribute('data-theme', STATE.theme); localStorage.setItem('mu_theme', STATE.theme); setTimeout(()=>STATE.charts.forEach(c=>c && c.resize && c.resize()), 100); }
+function toggleAutoRefresh(on){ STATE.autoRefresh = on; if(STATE.refreshTimer) clearInterval(STATE.refreshTimer); if(on) STATE.refreshTimer = setInterval(()=>{ render(); toast('已自动刷新'); }, 5*60*1000); }
+function render(){ STATE.charts.forEach(c=>{ try{c && c.dispose && c.dispose();}catch(e){} }); STATE.charts = []; const app = $('#app'); app.innerHTML = ''; app.appendChild(renderSidebar()); app.appendChild(renderTopbar()); const main = h('div',{class:'main',id:'mainArea'}); app.appendChild(main); renderDrill(main); }
+function renderTopbar(){ const pageMeta = { drill:{title:'多维下钻', sub:'部门 · 业务线 · 应用 · 模型'} }[STATE.page]; return h('header',{class:'topbar'}, h('div',{class:'page-title'}, h('h1',{}, pageMeta.title), h('span',{class:'sub'}, pageMeta.sub)), h('div',{class:'right'}, h('div',{class:'btn-grp'}, ...['day','week','month'].map(g=>{ const b = h('button',{class: STATE.granularity===g?'active':'', onClick:()=>{STATE.granularity=g;render();}}, {day:'日',week:'周',month:'月'}[g]); return b; })), h('select',{class:'select', onChange:e=>{STATE.role=e.target.value; localStorage.setItem('mu_role',e.target.value); render();}}, ...Object.entries(ROLES).map(([k,v])=>{ const o = h('option',{value:k}, v.name); if(k===STATE.role) o.selected = true; return o; })), h('button',{class:'btn sm', title:'切换主题', onClick:()=>{STATE.theme = STATE.theme==='light'?'dark':'light'; applyTheme();}}, STATE.theme==='light'?'🌙':'☀️'), h('button',{class:'btn sm '+(STATE.autoRefresh?'primary':''), onClick:()=>{toggleAutoRefresh(!STATE.autoRefresh); render();}}, STATE.autoRefresh?'⏸ 自动刷新':'▶ 自动刷新'), h('button',{class:'btn sm', onClick:()=>{render(); toast('已刷新');}}, '🔄 刷新'))); }
+function renderSidebar(){ const items = [{id:'drill',ico:'🔍',label:'多维下钻'}]; return h('aside',{class:'sidebar'}, h('div',{class:'logo'}, h('div',{class:'logo-mark', innerHTML:`<svg viewBox="0 0 40 40" width="40" height="40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="lgGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5b6cff"/><stop offset="50%" stop-color="#7c5cff"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs><rect x="2" y="2" width="36" height="36" rx="9" fill="url(#lgGrad)"/><g fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"><circle cx="20" cy="20" r="3.2" fill="#ffffff" stroke="none"/><circle cx="9"  cy="11" r="2"   fill="#ffffff" stroke="none"/><circle cx="31" cy="11" r="2"   fill="#ffffff" stroke="none"/><circle cx="9"  cy="29" r="2"   fill="#ffffff" stroke="none"/><circle cx="31" cy="29" r="2"   fill="#ffffff" stroke="none"/><line x1="11" y1="12" x2="17.6" y2="18.6"/><line x1="29" y1="12" x2="22.4" y2="18.6"/><line x1="11" y1="28" x2="17.6" y2="21.4"/><line x1="29" y1="28" x2="22.4" y2="21.4"/></g></svg>`}), h('div',{class:'logo-txt'}, h('div',{class:'logo-title'},'集团模型网关'), h('div',{class:'logo-sub'},'用量管理平台 · MaaS'))), h('div',{class:'group'},'主导航'), h('nav',{}, ...items.map(it=> h('div',{class:'navItem'+(STATE.page===it.id?' active':''), onClick:()=>{STATE.page=it.id; if(it.id==='drill') STATE.drill={level:'dept',deptId:null,blId:null,appId:null}; render();}}, h('span',{class:'ico'}, it.ico), h('span',{class:'label'}, it.label)))), h('div',{class:'side-footer'}, h('div',{}, '© ', String(new Date().getFullYear()), ' MaaS Platform'), h('div',{style:'margin-top:2px'}, 'v1.2.0 · 多维下钻版'))); }
+</script>
+<script id="pageDrill">
+let SORT = {key:'cost', dir:'desc'};
+function renderDrill(root){ const {level} = STATE.drill; root.appendChild(renderCrumbs()); root.appendChild(renderDrillToolbar()); if(level === 'model'){ renderModelDetail(root); } else { const tableCard = h('div',{class:'card'}, h('div',{id:'tableHost'})); root.appendChild(tableCard); renderTableOnly(); } }
+function renderCrumbs(){ const {level, deptId, blId, appId} = STATE.drill; const crumbs = h('div',{class:'crumbs'}, h('a',{onClick:()=>{STATE.drill={level:'dept',deptId:null,blId:null,appId:null}; STATE.globalFilters={deptName:'',vendor:'',modelName:''}; render();}},'📁 全部部门')); if(level==='dept') return crumbs; let topDept = null; if(deptId){ topDept = getDept(deptId); } else if(blId){ const b = getBL(blId); const sub = b ? getDept(b.deptId) : null; topDept = sub ? getDept(sub.parentId) : null; } else if(appId){ const a = getApp(appId); const sub = a ? getDept(a.deptId) : null; topDept = sub ? getDept(sub.parentId) : null; } if(topDept){ crumbs.appendChild(h('span',{class:'sep'},'›')); crumbs.appendChild(h('a',{onClick:()=>{STATE.drill={level:'bl',deptId:topDept.id,blId:null,appId:null}; render();}}, topDept.name)); } if(level==='bl') return crumbs; let bl = null; if(blId){ bl = getBL(blId); } else if(appId){ const a = getApp(appId); bl = a ? getBL(a.blId) : null; } if(bl){ crumbs.appendChild(h('span',{class:'sep'},'›')); crumbs.appendChild(h('a',{onClick:()=>{STATE.drill={level:'app',deptId:bl.deptId,blId:bl.id,appId:null}; render();}}, bl.name)); } if(level==='app') return crumbs; if(level==='model' && appId){ const a = getApp(appId); if(a){ crumbs.appendChild(h('span',{class:'sep'},'›')); crumbs.appendChild(h('span',{}, a.name + ' · 模型明细')); } } return crumbs; }
+function renderDrillToolbar(){ const {level} = STATE.drill; if(level === 'model'){ 
+    const appId = STATE.drill.appId;
+    const allModels = appId ? getAppModels(appId) : [];
+    const vendors = [...new Set(allModels.map(m=>m.vendor))];
+    return h('div',{class:'toolbar'}, 
+        h('select',{class:'select', value:STATE.modelDetailFilters.vendor, onChange:e=>{STATE.modelDetailFilters.vendor=e.target.value; render();}}, 
+            h('option',{value:''},'全部厂商'),
+            ...vendors.map(v=>h('option',{value:v},v))
+        ),
+        h('input',{class:'input', placeholder:'模型名称', value:STATE.modelFilter.keyword, onInput:e=>{STATE.modelFilter.keyword=e.target.value; render();}}),
+        h('div',{class:'spacer'}),
+        h('button',{class:'btn sm', onClick:exportModelCSV},'⬇ 导出模型 CSV'),
+        h('button',{class:'btn sm primary', onClick:exportModelExcel},'⬇ 导出模型 Excel')
+    );
+  }
+  const vendors = [...new Set(MODEL_CATALOG.map(m=>m.vendor))];
+  const selectedVendor = STATE.globalFilters.vendor;
+  let availableModels = MODEL_CATALOG;
+  if(selectedVendor) availableModels = MODEL_CATALOG.filter(m=>m.vendor === selectedVendor);
+  const modelOptions = [...new Map(availableModels.map(m=>[m.name, m.name])).keys()];
+  return h('div',{class:'toolbar'}, 
+      h('input',{class:'input', placeholder:'部门名称', value:STATE.globalFilters.deptName, onInput:e=>{STATE.globalFilters.deptName=e.target.value; render();}}),
+      h('select',{class:'select', value:STATE.globalFilters.vendor, onChange:e=>{STATE.globalFilters.vendor=e.target.value; STATE.globalFilters.modelName=''; render();}}, 
+          h('option',{value:''},'全部厂商'),
+          ...vendors.map(v=>h('option',{value:v},v))
+      ),
+      h('select',{class:'select', value:STATE.globalFilters.modelName, onChange:e=>{STATE.globalFilters.modelName=e.target.value; render();}}, 
+          h('option',{value:''},'全部模型'),
+          ...modelOptions.map(m=>h('option',{value:m},m))
+      ),
+      h('div',{class:'spacer'}),
+      h('button',{class:'btn sm', onClick:exportCSV},'⬇ 导出 CSV'),
+      h('button',{class:'btn sm primary', onClick:exportExcel},'⬇ 导出 Excel')
+  );
+}
+function currentRows(){ const aggs = filterByRole(aggregateAll()); const {level, deptId, blId} = STATE.drill; let rows;
+  if(level==='dept'){ 
+    const allApps = APPS;
+    const filteredApps = applyGlobalFilters(allApps);
+    const filteredAppIds = new Set(filteredApps.map(a=>a.id));
+    rows = groupByDeptWithFilters(aggs, filteredAppIds);
+  } else if(level==='bl'){ 
+    const allApps = APPS;
+    const filteredApps = applyGlobalFilters(allApps);
+    const filteredAppIds = new Set(filteredApps.map(a=>a.id));
+    rows = groupByBLWithFilters(aggs, filteredAppIds, deptId);
+  } else { 
+    let filteredApps = APPS;
+    filteredApps = applyGlobalFilters(filteredApps);
+    const filteredAppIds = new Set(filteredApps.map(a=>a.id));
+    const baseRows = aggs.filter(a=> filteredAppIds.has(a.appId) && getApp(a.appId).blId === blId).map(a=>{ const app = getApp(a.appId); const st = getServiceType(app.serviceType); const models = getAppModels(app.id); return { id:app.id, name:app.name, owner:app.owner, serviceType:st.name, unit:st.unit, usage:a.usage, cost:a.cost, modelCount: models.length, deptId: app.deptId, blId: app.blId }; });
+    rows = baseRows;
+  }
+  rows.sort((a,b)=>{ const va = a[SORT.key], vb = b[SORT.key]; if(va==null) return 1; if(vb==null) return -1; if(typeof va==='number') return SORT.dir==='asc'?va-vb:vb-va; return SORT.dir==='asc'? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va)); }); 
+  return rows; 
+}
+function renderTableOnly(){ const host = document.getElementById('tableHost'); if(!host) return; host.innerHTML = ''; const rows = currentRows(); const {level} = STATE.drill; let thConf; if(level==='dept'){ thConf = [['name','一级部门'], ['modelCount','模型数'], ['usage','用量(tokens)'], ['cost','费用(元)']]; } else if(level==='bl'){ thConf = [['name','二级部门'], ['modelCount','模型数'], ['usage','用量(tokens)'], ['cost','费用(元)']]; } else { thConf = [['name','三级部门'], ['modelCount','模型数'], ['usage','用量(tokens)'], ['cost','费用(元)']]; } const thead = h('thead',{}, h('tr',{}, ...thConf.map(([k,label])=> h('th',{onClick:()=>{ SORT.dir = SORT.key===k && SORT.dir==='desc' ? 'asc' : 'desc'; SORT.key = k; renderTableOnly(); }}, label + (SORT.key===k?(SORT.dir==='desc'?' ▼':' ▲'):''))))); const tbody = h('tbody',{}); if(rows.length===0){ tbody.appendChild(h('tr',{}, h('td',{colspan:thConf.length, style:'text-align:center;padding:40px;color:var(--text-3)'},'暂无数据'))); } rows.forEach(r=>{ const tr = h('tr',{}); thConf.forEach(([k])=>{ let val = r[k]; let cls=''; if(k==='name'){ let linkFn = null; if(level==='dept') linkFn = ()=>{ STATE.drill={level:'bl', deptId:r.id, blId:null, appId:null}; render(); }; else if(level==='bl') linkFn = ()=>{ STATE.drill={level:'app', deptId:r.deptId, blId:r.id, appId:null}; render(); }; else if(level==='app') linkFn = ()=>{ STATE.drill={level:'model', deptId:r.deptId, blId:r.blId, appId:r.id}; render(); }; if(linkFn){ tr.appendChild(h('td',{class:'linkRow', onClick:linkFn}, val)); return; } } if(['usage','cost','modelCount'].includes(k)){ cls='num'; val = k==='cost' ? fmtMoney(val) : fmtNum(val); } tr.appendChild(h('td',{class:cls}, val??'-')); }); tbody.appendChild(tr); }); const tips = level==='app' ? `共 ${rows.length} 条 · 点击表头排序 · 点击三级部门查看模型明细` : `共 ${rows.length} 条 · 点击表头排序 · 点击名称下钻`; const footer = h('div',{class:'card-bd text-3', style:'padding:10px 20px;border-top:1px solid var(--border-2);font-size:12px'}, tips); host.appendChild(h('table',{class:'tbl'}, thead, tbody)); host.appendChild(footer); }
+function currentModelRows(){ const {appId} = STATE.drill; if(!appId) return []; let rows = getAppModels(appId);
+  const vendorFilter = STATE.modelDetailFilters.vendor;
+  const nameFilter = (STATE.modelFilter.keyword||'').trim().toLowerCase();
+  if(vendorFilter) rows = rows.filter(r=> r.vendor === vendorFilter);
+  if(nameFilter) rows = rows.filter(r=> r.modelName.toLowerCase().includes(nameFilter));
+  rows.sort((a,b)=>{ const va = a[SORT.key], vb = b[SORT.key]; if(va==null) return 1; if(vb==null) return -1; if(typeof va==='number') return SORT.dir==='asc'?va-vb:vb-va; return SORT.dir==='asc'? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va)); }); 
+  return rows; 
+}
+function renderModelDetail(root){ const {appId} = STATE.drill; const app = getApp(appId); if(!app){ root.appendChild(h('div',{class:'card card-pad'}, '未找到该应用')); return; } const modelRows = currentModelRows(); const allRows = getAppModels(appId); const totalCost = allRows.reduce((s,r)=>s+r.cost,0); const totalCalls = allRows.reduce((s,r)=>s+r.calls,0); const totalTokens = allRows.reduce((s,r)=>s+r.tokensTotal,0); const kpiRow = h('div',{class:'kpi-grid'}, kpiCard('使用模型数', fmtNum(allRows.length) + ' 个'), kpiCard('累计费用', fmtMoney(totalCost.toFixed(2)) + ' 元'), kpiCard('累计调用', fmtNum(totalCalls) + ' 次'), kpiCard('Token 总量', fmtNum(totalTokens))); root.appendChild(kpiRow); const grid2 = document.createElement('div'); grid2.style.cssText = 'display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:12px;'; grid2.appendChild(h('div',{class:'card card-pad'}, h('div',{class:'card-hd'}, h('div',{class:'card-ti'}, '📈 近 30 天 费用 / 调用量 双轴趋势'), h('div',{class:'text-3', style:'font-size:12px'}, app.name)), h('div',{id:'chModelTrend', style:'height:300px'}))); grid2.appendChild(h('div',{class:'card card-pad'}, h('div',{class:'card-hd'}, h('div',{class:'card-ti'}, '🥧 各模型费用占比')), h('div',{id:'chModelPie', style:'height:300px'}))); root.appendChild(grid2); const tableCard = h('div',{class:'card', style:'margin-top:12px'}, h('div',{class:'card-hd', style:'padding:12px 20px;border-bottom:1px solid var(--border-2);display:flex;align-items:center'}, h('div',{class:'card-ti'}, '📋 模型用量明细'), h('div',{class:'text-3', style:'margin-left:auto;font-size:12px'}, `共 ${modelRows.length} 个模型 · 点击表头排序`)), h('div',{id:'modelTableHost'})); root.appendChild(tableCard); renderModelTable(modelRows); renderModelCharts(app, allRows); }
+function renderModelTable(rows){ const host = document.getElementById('modelTableHost'); if(!host) return; host.innerHTML = ''; const thConf = [ ['modelName','模型'], ['calls','调用次数'], ['tokensTotal','Token 总量'], ['cost','累计消费(元)'] ]; const thead = h('thead',{}, h('tr',{}, ...thConf.map(([k,label])=> h('th',{onClick:()=>{ SORT.dir = SORT.key===k && SORT.dir==='desc' ? 'asc' : 'desc'; SORT.key = k; render(); }}, label + (SORT.key===k?(SORT.dir==='desc'?' ▼':' ▲'):''))))); const tbody = h('tbody',{}); if(rows.length===0) tbody.appendChild(h('tr',{}, h('td',{colspan:thConf.length, style:'text-align:center;padding:40px;color:var(--text-3)'},'暂无数据'))); rows.forEach(r=>{ const tr = h('tr',{}); thConf.forEach(([k])=>{ let val = r[k], cls=''; if(['calls','tokensTotal','cost'].includes(k)){ cls='num'; if(k==='cost') val = fmtMoney(val); else if(k==='calls'||k==='tokensTotal') val = fmtNum(val); else val = (typeof val==='number' ? val.toFixed(2) : val); } tr.appendChild(h('td',{class:cls}, val??'-')); }); tbody.appendChild(tr); }); host.appendChild(h('table',{class:'tbl'}, thead, tbody)); }
+function renderModelCharts(app, rows){ const trendEl = document.getElementById('chModelTrend'); if(trendEl && window.echarts){ const ch1 = echarts.init(trendEl, STATE.theme==='dark'?'dark':null); STATE.charts.push(ch1); const merged = getAppModelDailyMerged(app.id); const dates = merged.map(p=>p.date.slice(5)); ch1.setOption({ tooltip:{trigger:'axis'}, legend:{data:['费用(元)','调用次数'], top:0, textStyle:{color:'var(--text-2)'}}, grid:{left:40,right:50,top:30,bottom:30}, xAxis:{type:'category', data:dates, axisLabel:{color:'var(--text-3)'}}, yAxis:[ {type:'value', name:'费用', axisLabel:{color:'var(--text-3)', formatter:'¥{value}'}}, {type:'value', name:'调用', axisLabel:{color:'var(--text-3)'}} ], series:[ {name:'费用(元)', type:'line', smooth:true, yAxisIndex:0, areaStyle:{opacity:0.15}, itemStyle:{color:'#2563eb'}, data:merged.map(p=>p.cost)}, {name:'调用次数', type:'bar', yAxisIndex:1, itemStyle:{color:'#10b981', opacity:0.7}, data:merged.map(p=>p.calls)} ] }); } const pieEl = document.getElementById('chModelPie'); if(pieEl && window.echarts){ const ch2 = echarts.init(pieEl, STATE.theme==='dark'?'dark':null); STATE.charts.push(ch2); ch2.setOption({ tooltip:{trigger:'item', formatter:'{b}<br/>费用 ¥{c} ({d}%)'}, legend:{type:'scroll', bottom:0, textStyle:{color:'var(--text-2)'}}, series:[{ type:'pie', radius:['45%','70%'], center:['50%','45%'], itemStyle:{borderRadius:6, borderColor:'var(--bg-1)', borderWidth:2}, label:{color:'var(--text-2)'}, data: rows.map(r=>({name:r.modelName, value:r.cost})) }] }); } }
+function exportCSV(){ const rows = currentRows(); if(rows.length===0){ toast('无数据可导出','error'); return; } let headers = Object.keys(rows[0]).filter(k=>k!=='id'&&k!=='deptId'&&k!=='blId'&&k!=='owner'&&k!=='serviceType'&&k!=='alert'&&k!=='count'); const lines = [headers.join(',')]; rows.forEach(r=> lines.push(headers.map(k=>{ const v = r[k]; if(v==null) return ''; if(typeof v==='string' && v.includes(',')) return `"${v}"`; return v; }).join(','))); const blob = new Blob(['\ufeff' + lines.join('\n')], {type:'text/csv;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `maas-usage-${STATE.drill.level}-${Date.now()}.csv`; a.click(); toast('CSV 导出成功'); }
+function exportExcel(){ const rows = currentRows(); if(rows.length===0){ toast('无数据可导出','error'); return; } let headers = Object.keys(rows[0]).filter(k=>k!=='id'&&k!=='deptId'&&k!=='blId'&&k!=='owner'&&k!=='serviceType'&&k!=='alert'&&k!=='count'); const html = `<meta charset="utf-8"><table border="1">${headers.map(h=>`<th>${h}</th>`).join('')}${rows.map(r=>`<tr>${headers.map(h=>`<td>${r[h]??''}</td>`).join('')}<tr>`).join('')}</table>`; const blob = new Blob([html], {type:'application/vnd.ms-excel'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `maas-usage-${STATE.drill.level}-${Date.now()}.xls`; a.click(); toast('Excel 导出成功'); }
+function exportModelCSV(){ const rows = currentModelRows(); if(rows.length===0){ toast('无模型数据可导出','error'); return; } const headers = ['modelId','modelName','calls','tokensIn','tokensOut','tokensTotal','cost']; const lines = [headers.join(',')]; rows.forEach(r=> lines.push(headers.map(k=>{ const v = r[k]; if(v==null) return ''; if(typeof v==='string' && v.includes(',')) return `"${v}"`; return v; }).join(','))); const app = getApp(STATE.drill.appId); const blob = new Blob(['\ufeff' + lines.join('\n')], {type:'text/csv;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `maas-models-${app?app.name:'app'}-${Date.now()}.csv`; a.click(); toast('模型 CSV 导出成功'); }
+function exportModelExcel(){ const rows = currentModelRows(); if(rows.length===0){ toast('无模型数据可导出','error'); return; } const headers = ['modelId','modelName','calls','tokensIn','tokensOut','tokensTotal','cost']; const html = `<meta charset="utf-8"><table border="1"><tr>${headers.map(hd=>`<th>${hd}</th>`).join('')}</tr>${rows.map(r=>`<tr>${headers.map(hd=>`<td>${r[hd]??''}</td>`).join('')}</tr>`).join('')}</table>`; const app = getApp(STATE.drill.appId); const blob = new Blob([html], {type:'application/vnd.ms-excel'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `maas-models-${app?app.name:'app'}-${Date.now()}.xls`; a.click(); toast('模型 Excel 导出成功'); }
+function kpiCard(label, value, delta, deltaLabel, cls, badge){ const el = h('div',{class:'kpi '+(cls||'')}, h('div',{class:'label'}, label), h('div',{class:'value'}, value)); if(delta!=null){ const up = delta >= 0; el.appendChild(h('div',{class:'delta '+(up?'up':'down')}, (up?'▲ ':'▼ ') + (Math.abs(delta)*100).toFixed(1)+'% ' + (deltaLabel||''))); } else if(badge){ el.appendChild(h('div',{class:'delta'}, h('span',{class:'badge '+(cls==='danger'?'danger':cls==='warn'?'warn':'ok')}, badge))); } return el; }
+</script>
+<script id="bootstrap">
+(function(){ try { applyTheme(); render(); window.addEventListener('resize', function(){ if(STATE && STATE.charts) STATE.charts.forEach(function(c){ try{ c && c.resize && c.resize(); }catch(e){} }); }); console.log('[MaaS Usage] booted'); } catch (err) { console.error(err); var app = document.getElementById('app'); if(app) app.innerHTML = '<div style="padding:24px;color:#dc2626;">启动失败</div>'; } })();
+</script>
+</body>
+</html>
