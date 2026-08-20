@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>集团模型网关用量管理平台 · MaaS 总览看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root{
+  --primary:#5b6cff; --primary-2:#7c5cff; --primary-soft:#eef0ff;
+  --accent:#10b981;
+  --bg:#f5f7fb; --surface:#fff; --surface-2:#fafbfd;
+  --text:#0f172a; --text-2:#475569; --text-3:#94a3b8;
+  --border:#e5e7eb; --border-2:#f1f5f9;
+  --shadow:0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.03);
+  --shadow-lg:0 10px 25px rgba(15,23,42,.08);
+  --radius:10px; --radius-lg:14px;
+  --side-w:240px; --top-h:60px;
+  --gap:16px; --gap-lg:20px; --gap-xl:24px;
+}
+[data-theme="dark"]{
+  --bg:#0b1222; --surface:#111a2e; --surface-2:#17223b;
+  --text:#f1f5f9; --text-2:#a6b3c8; --text-3:#6b7a93;
+  --border:#243147; --border-2:#1b2539; --primary-soft:#1e2a52;
+  --shadow:0 1px 3px rgba(0,0,0,.35); --shadow-lg:0 10px 25px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s}
+#app{
+  display:grid;
+  grid-template-columns:var(--side-w) 1fr;
+  grid-template-rows:var(--top-h) 1fr;
+  grid-template-areas:"side top" "side main";
+  min-height:100vh;
+}
+.topbar{
+  grid-area:top;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 var(--gap-xl);gap:var(--gap);
+  position:sticky;top:0;z-index:10;
+}
+.topbar .page-title{display:flex;flex-direction:column;gap:2px;line-height:1.25}
+.topbar .page-title h1{font-size:16px;font-weight:600;color:var(--text)}
+.topbar .page-title .sub{font-size:12px;color:var(--text-3)}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.sidebar{
+  grid-area:side;background:var(--surface);
+  border-right:1px solid var(--border);
+  padding:20px 0 16px;
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;
+}
+.sidebar .logo{
+  display:flex;align-items:center;gap:12px;
+  padding:0 20px 18px;margin-bottom:6px;
+  border-bottom:1px solid var(--border-2);
+}
+.sidebar .logo-mark{
+  width:40px;height:40px;flex:0 0 40px;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.sidebar .logo-mark svg{display:block;width:100%;height:100%}
+.sidebar .logo-txt{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.sidebar .logo-title{
+  font-size:15px;font-weight:700;
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-2) 55%,var(--accent) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  white-space:nowrap;
+}
+.sidebar .logo-sub{font-size:11px;color:var(--text-3);margin-top:1px}
+.sidebar nav{padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.sidebar .navItem{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;color:var(--text-2);cursor:pointer;
+  border-radius:8px;font-size:13.5px;font-weight:500;
+}
+.sidebar .navItem.active{
+  background:linear-gradient(90deg,var(--primary-soft) 0%,transparent 100%);
+  color:var(--primary);font-weight:600;
+  box-shadow:inset 3px 0 0 var(--primary);
+}
+.sidebar .navItem .ico{width:18px;text-align:center;font-size:15px}
+.sidebar .group{padding:14px 20px 6px;font-size:10.5px;color:var(--text-3);font-weight:600}
+.sidebar .side-footer{margin-top:auto;padding:12px 20px;border-top:1px solid var(--border-2);font-size:11px;color:var(--text-3)}
+.main{grid-area:main;padding:var(--gap-xl);overflow-x:hidden}
+.row{display:flex;gap:var(--gap);flex-wrap:wrap}
+.col{flex:1;min-width:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);transition:box-shadow .2s}
+.card-hd{padding:16px 20px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-hd h3{font-size:14.5px;font-weight:600}
+.card-bd{padding:18px 20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--gap);margin-bottom:var(--gap-lg)}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;position:relative}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),var(--primary-2))}
+.kpi .label{color:var(--text-2);font-size:12px;margin-bottom:10px;font-weight:500}
+.kpi .value{font-size:26px;font-weight:700;font-family:-apple-system,"Segoe UI",sans-serif;letter-spacing:-.3px}
+.chart{width:100%;height:320px}
+.chart-sm{width:100%;height:260px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500}
+.btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn-grp{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.btn-grp button{padding:6px 14px;background:transparent;color:var(--text-2);border:none;cursor:pointer;font-size:13px;border-right:1px solid var(--border);font-weight:500}
+.btn-grp button:last-child{border-right:none}
+.btn-grp button.active{background:var(--primary);color:#fff}
+.input,.select{padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px}
+.date-picker-group{display:flex;gap:8px;align-items:center}
+.toast{position:fixed;top:20px;right:20px;background:var(--surface);border-left:4px solid var(--success);padding:10px 16px;border-radius:6px;box-shadow:var(--shadow-lg);z-index:999;font-size:13px;animation:slide .3s}
+@keyframes slide{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 12px 4px;
+  padding-left: 12px;
+  border-left: 4px solid var(--primary);
+  color: var(--text);
+}
+.section-title:first-of-type {
+  margin-top: 0;
+}
+@media (max-width:1100px){
+  :root{--side-w:72px}
+  .sidebar .logo-txt,.sidebar .navItem .label,.sidebar .group,.sidebar .side-footer{display:none}
+  .sidebar .logo{justify-content:center;padding:0 0 18px}
+  .sidebar nav{padding:8px 6px}
+  .sidebar .navItem{justify-content:center;padding:11px 0}
+}
+@media (max-width:640px){
+  :root{--side-w:0px;--gap-xl:16px}
+  .sidebar{display:none}
+  #app{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ========== 产品列表（用于产品维度） ==========
+const PRODUCT_LIST = [
+  '智能营销', '商户管理', '言犀数字人SaaS版', '山海用户中心', '天璇',
+  '思源', 'NP', '天智', '云峰', '京园通'
+];
+
+// ========== Mock 数据生成器（增加产品分配） ==========
+const SERVICE_TYPES = [
+  {id:'llm-chat',  name:'LLM 对话',    unit:'千 tokens', price:0.012},
+  {id:'llm-embed', name:'向量嵌入',    unit:'千 tokens', price:0.0007},
+  {id:'image-gen', name:'图像生成',    unit:'张',        price:0.05},
+  {id:'asr',       name:'语音识别',    unit:'分钟',      price:0.06},
+  {id:'tts',       name:'语音合成',    unit:'万字符',    price:0.18}
+];
+const DEPARTMENTS = [
+  {id:'jd-retail',   name:'京东零售',   budget:180000, children:[{id:'jdr-search',name:'搜索推荐部'},{id:'jdr-mall',name:'主站商城部'},{id:'jdr-supply',name:'供应链中台'}]},
+  {id:'jd-tech',     name:'京东科技',   budget:150000, children:[{id:'jdt-ai',name:'AI 平台部'},{id:'jdt-cloud',name:'京东云事业部'},{id:'jdt-fintech',name:'数字金融部'}]},
+  {id:'jd-logistics',name:'京东物流',   budget:90000,  children:[{id:'jdl-ops',name:'仓配运营部'},{id:'jdl-route',name:'智能路由部'}]},
+  {id:'jd-health',   name:'京东健康',   budget:60000,  children:[{id:'jdh-clinic',name:'互联网医院'},{id:'jdh-pharma',name:'医药零售部'}]},
+  {id:'jd-industry', name:'京东工业',   budget:40000,  children:[{id:'jdi-mro',name:'MRO 工业品事业部'}]}
+];
+const BUSINESS_LINES = [
+  {id:'bl-search',name:'京东搜索',deptId:'jdr-search'},{id:'bl-recom',name:'商品推荐',deptId:'jdr-search'},
+  {id:'bl-mall',name:'主站交易',deptId:'jdr-mall'},{id:'bl-supply',name:'供应链智能',deptId:'jdr-supply'},
+  {id:'bl-ai-plat',name:'言犀 AI 平台',deptId:'jdt-ai'},{id:'bl-cloud',name:'京东云服务',deptId:'jdt-cloud'},
+  {id:'bl-fintech',name:'数字金融风控',deptId:'jdt-fintech'},{id:'bl-warehouse',name:'智能仓储',deptId:'jdl-ops'},
+  {id:'bl-route',name:'路径规划',deptId:'jdl-route'},{id:'bl-clinic',name:'互联网医院',deptId:'jdh-clinic'},
+  {id:'bl-pharma',name:'医药零售部',deptId:'jdh-pharma'},{id:'bl-mro',name:'工业品采购',deptId:'jdi-mro'}
+];
+const MODEL_CATALOG = [
+  {id:'deepseek-v3',name:'DeepSeek-V3',vendor:'DeepSeek',modality:'text',priceIn:0.002,priceOut:0.008},
+  {id:'glm-4-plus',name:'GLM-4-Plus',vendor:'智谱 AI',modality:'text',priceIn:0.005,priceOut:0.005},
+  {id:'qwen-max',name:'Qwen-Max',vendor:'阿里通义',modality:'text',priceIn:0.02,priceOut:0.06},
+  {id:'doubao-pro',name:'豆包 Pro',vendor:'字节火山',modality:'text',priceIn:0.0008,priceOut:0.002},
+];
+const APP_PREFIXES = ['智能','AI','灵犀','慧眼','妙笔'];
+const APP_SUFFIXES = ['助手','引擎','分析','客服','问答'];
+
+// 生成应用数据，并为每个应用随机分配产品（产品维度）
+function generateApps(){
+  let counter=1000; const apps=[];
+  BUSINESS_LINES.forEach(bl=>{
+    const n = 3 + Math.floor(Math.random()*3);
+    for(let i=0;i<n;i++) {
+      const product = PRODUCT_LIST[Math.floor(Math.random() * PRODUCT_LIST.length)];
+      apps.push({
+        id:'app-'+(counter++), 
+        name:APP_PREFIXES[Math.floor(Math.random()*APP_PREFIXES.length)]+APP_SUFFIXES[Math.floor(Math.random()*APP_SUFFIXES.length)], 
+        blId:bl.id, deptId:bl.deptId, 
+        owner:['张磊','王芳','李娜'][Math.floor(Math.random()*3)], 
+        serviceType:SERVICE_TYPES[Math.floor(Math.random()*SERVICE_TYPES.length)].id,
+        product: product   // 新增产品属性
+      });
+    }
+  });
+  return apps;
+}
+const APPS = generateApps();
+
+// 日级数据 (每个应用每天的费用和token用量)
+function generateDailyCostSeries(days){
+  const now=new Date(); now.setHours(0,0,0,0);
+  return APPS.map(app=>{
+    const st=SERVICE_TYPES.find(s=>s.id===app.serviceType);
+    const points=[];
+    for(let i=days-1;i>=0;i--){
+      const d=new Date(now.getTime()-i*86400000);
+      const usage = 500 + Math.random() * 2000;  // token 用量
+      const cost = +((usage/1000)*st.price).toFixed(2);
+      points.push({date:d.toISOString().slice(0,10), usage:Math.round(usage), cost});
+    }
+    return {appId:app.id, points};
+  });
+}
+const DAILY_SERIES = generateDailyCostSeries(30);
+
+// 小时曲线
+function generateHourlyProfile(){
+  return APPS.map(app=>{
+    const st=SERVICE_TYPES.find(s=>s.id===app.serviceType);
+    const points=[];
+    for(let h=0;h<24;h++){
+      const peak = (h>=9 && h<=22) ? 1.8 : 0.4;
+      const usage = 80 + Math.random() * 300 * peak;
+      const cost = +((usage/1000)*st.price).toFixed(2);
+      points.push({hour:h, usage:Math.round(usage), cost});
+    }
+    return {appId:app.id, points};
+  });
+}
+const HOURLY_PROFILE = generateHourlyProfile();
+
+function getDept(id){ 
+  const all = [...DEPARTMENTS];
+  DEPARTMENTS.forEach(d=>{ if(d.children) all.push(...d.children); });
+  return all.find(d=>d.id===id); 
+}
+function getApp(id){ return APPS.find(a=>a.id===id); }
+function flatTopDepts(){ return DEPARTMENTS.map(d=>({id:d.id,name:d.name})); }
+function flatSubDepts(){ const subs=[]; DEPARTMENTS.forEach(d=>{ if(d.children) d.children.forEach(c=> subs.push({id:c.id,name:c.name,parentId:d.id})); }); return subs; }
+
+// ========== 状态与核心逻辑 ==========
+const STATE = {
+  theme: localStorage.getItem('mu_theme') || 'light',
+  timeMode: 'preset',
+  presetKey: '1d',
+  customStart: null,
+  customEnd: null,
+  charts: []
+};
+
+function isHourPreset(key){
+  return ['1h','3h','6h','1d'].includes(key);
+}
+function getPresetHours(key){
+  if(key === '1h') return 1;
+  if(key === '3h') return 3;
+  if(key === '6h') return 6;
+  if(key === '1d') return 24;
+  return 0;
+}
+function getPresetDays(key){
+  if(key === '7d') return 7;
+  if(key === '30d') return 30;
+  return 0;
+}
+
+function getCurrentRange(){
+  if(STATE.timeMode === 'custom' && STATE.customStart && STATE.customEnd){
+    return { type: 'day', start: STATE.customStart.slice(0,10), end: STATE.customEnd.slice(0,10), hourLimit: null };
+  } else {
+    const key = STATE.presetKey;
+    if(isHourPreset(key)){
+      return { type: 'hour', hourLimit: getPresetHours(key), start: null, end: null };
+    } else {
+      const days = getPresetDays(key);
+      const end = new Date(); end.setHours(0,0,0,0);
+      const start = new Date(); start.setDate(start.getDate() - days + 1);
+      return { type: 'day', start: start.toISOString().slice(0,10), end: end.toISOString().slice(0,10), hourLimit: null };
+    }
+  }
+}
+
+// 获取聚合后的应用数据（总cost，总usage，时序点）
+function getAppsAggregate(range){
+  if(range.type === 'hour'){
+    const hourLimit = range.hourLimit;
+    const result = [];
+    HOURLY_PROFILE.forEach(profile => {
+      const lastHours = profile.points.slice(-hourLimit);
+      const totalUsage = lastHours.reduce((s,p)=>s+p.usage, 0);
+      const totalCost = lastHours.reduce((s,p)=>s+p.cost, 0);
+      result.push({ appId: profile.appId, usage: totalUsage, cost: totalCost, points: lastHours });
+    });
+    return result;
+  } else {
+    const { start, end } = range;
+    const result = [];
+    DAILY_SERIES.forEach(series => {
+      let filtered = series.points;
+      if(start) filtered = filtered.filter(p => p.date >= start);
+      if(end) filtered = filtered.filter(p => p.date <= end);
+      const totalUsage = filtered.reduce((s,p)=>s+p.usage, 0);
+      const totalCost = filtered.reduce((s,p)=>s+p.cost, 0);
+      result.push({ appId: series.appId, usage: totalUsage, cost: totalCost, points: filtered });
+    });
+    return result;
+  }
+}
+
+// KPI 数据
+function getOverviewStats(range){
+  const apps = getAppsAggregate(range);
+  const totalCost = apps.reduce((s,a)=>s+a.cost, 0);
+  const totalUsageToken = apps.reduce((s,a)=>s+a.usage, 0);
+  let avgMetric = 0;
+  let avgLabel = '';
+  if(range.type === 'hour'){
+    const hours = range.hourLimit;
+    avgMetric = totalCost / hours;
+    avgLabel = '小时均费';
+  } else {
+    const dayCount = (new Date(range.end) - new Date(range.start)) / 86400000 + 1;
+    avgMetric = totalCost / dayCount;
+    avgLabel = '日均费用';
+  }
+  return { totalCost, totalUsageToken, avgMetric, avgLabel };
+}
+
+// 部门维度（一级部门 TOP5 token消耗占比）
+function getTopDeptsUsage(range){
+  const apps = getAppsAggregate(range);
+  const deptMap = new Map();
+  apps.forEach(item => {
+    const app = getApp(item.appId);
+    if(!app) return;
+    let topDept = DEPARTMENTS.find(d => d.id === app.deptId) || DEPARTMENTS.find(d => d.children?.some(c=>c.id===app.deptId));
+    if(topDept) deptMap.set(topDept.id, (deptMap.get(topDept.id)||0) + item.usage);
+  });
+  return Array.from(deptMap.entries()).map(([id,usage])=>({ name: getDept(id)?.name||id, usage })).sort((a,b)=>b.usage-a.usage).slice(0,5);
+}
+function getSubDeptsUsage(range){
+  const apps = getAppsAggregate(range);
+  const subMap = new Map();
+  const subList = flatSubDepts();
+  apps.forEach(item => {
+    const app = getApp(item.appId);
+    if(!app) return;
+    const sub = subList.find(s => s.id === app.deptId);
+    if(sub) subMap.set(sub.id, (subMap.get(sub.id)||0) + item.usage);
+  });
+  return Array.from(subMap.entries()).map(([id,usage])=>({ name: getDept(id)?.name||id, usage })).sort((a,b)=>b.usage-a.usage).slice(0,10);
+}
+function getAppsUsage(range){
+  const apps = getAppsAggregate(range);
+  return apps.map(item=>({ name: getApp(item.appId)?.name || item.appId, usage: item.usage })).sort((a,b)=>b.usage-a.usage).slice(0,10);
+}
+
+// 产品维度: 聚合各产品的 token 消耗量 (基于当前范围)
+function getProductsUsage(range){
+  const appsAgg = getAppsAggregate(range);
+  const productMap = new Map();
+  appsAgg.forEach(item => {
+    const app = getApp(item.appId);
+    if(!app || !app.product) return;
+    const productName = app.product;
+    const current = productMap.get(productName) || 0;
+    productMap.set(productName, current + item.usage);
+  });
+  // 确保所有产品都有数据（即使为0，也保留0用于展示，避免漏掉产品）
+  PRODUCT_LIST.forEach(p => {
+    if (!productMap.has(p)) productMap.set(p, 0);
+  });
+  return Array.from(productMap.entries())
+    .map(([name, usage]) => ({ name, usage }))
+    .sort((a,b) => b.usage - a.usage)
+    .slice(0, 10);  // TOP10（正好十个产品）
+}
+
+// 趋势图数据
+function getTrendData(range){
+  if(range.type === 'hour'){
+    const hourLimit = range.hourLimit;
+    const hourAgg = new Array(hourLimit).fill().map(()=>({ usage:0, cost:0 }));
+    const apps = getAppsAggregate(range);
+    apps.forEach(app => {
+      app.points.forEach((pt, idx) => {
+        if(idx < hourLimit){
+          hourAgg[idx].usage += pt.usage;
+          hourAgg[idx].cost += pt.cost;
+        }
+      });
+    });
+    const xAxis = Array.from({length:hourLimit}, (_,i)=> {
+      let hour = (24 - hourLimit + i) % 24;
+      return `${hour}:00`;
+    });
+    const usageData = hourAgg.map(p=>p.usage);
+    const costData = hourAgg.map(p=>+p.cost.toFixed(2));
+    return { xAxis, usageData, costData, isHour: true };
+  } else {
+    const apps = getAppsAggregate(range);
+    if(!apps.length || !apps[0].points.length) return { xAxis:[], usageData:[], costData:[] };
+    const firstPoints = apps[0].points;
+    const xAxis = firstPoints.map(p=>p.date.slice(5));
+    const usageArr = new Array(firstPoints.length).fill(0);
+    const costArr = new Array(firstPoints.length).fill(0);
+    apps.forEach(app => {
+      app.points.forEach((p,idx) => {
+        usageArr[idx] += p.usage;
+        costArr[idx] += p.cost;
+      });
+    });
+    return { xAxis, usageData: usageArr, costData: costArr.map(v=>+v.toFixed(2)), isHour: false };
+  }
+}
+
+function fmtNumber(n){ return n.toLocaleString('zh-CN', {maximumFractionDigits:0}); }
+function fmtMoney(n){ return '¥' + n.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.innerText=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
+function applyTheme(){ document.documentElement.setAttribute('data-theme',STATE.theme); localStorage.setItem('mu_theme',STATE.theme); STATE.charts.forEach(c=>c?.resize?.()); }
+
+function renderOverview(root){
+  const range = getCurrentRange();
+  const { totalCost, totalUsageToken, avgMetric, avgLabel } = getOverviewStats(range);
+  
+  // KPI
+  const kpiDiv = document.createElement('div'); kpiDiv.className='kpi-grid';
+  const costCard = document.createElement('div'); costCard.className='kpi'; costCard.innerHTML = `<div class="label">总费用</div><div class="value">${fmtMoney(totalCost)}</div>`;
+  const usageCard = document.createElement('div'); usageCard.className='kpi'; usageCard.innerHTML = `<div class="label">总用量 (token)</div><div class="value">${fmtNumber(totalUsageToken)}</div>`;
+  const avgCard = document.createElement('div'); avgCard.className='kpi'; avgCard.innerHTML = `<div class="label">${avgLabel}</div><div class="value">${fmtMoney(avgMetric)}</div>`;
+  kpiDiv.append(costCard, usageCard, avgCard);
+  root.appendChild(kpiDiv);
+  
+  // 趋势图
+  const trendData = getTrendData(range);
+  const trendCard = document.createElement('div'); trendCard.className='card'; trendCard.style.marginBottom='16px';
+  trendCard.innerHTML = `<div class="card-hd"><h3>📈 费用 & 用量趋势 (${range.type==='hour'?'小时粒度':'日粒度'})</h3><span class="text-3">MaaS Gateway 计费日志</span></div><div class="card-bd"><div class="chart" id="chTrend"></div></div>`;
+  root.appendChild(trendCard);
+  
+  // ========= 部门维度区域 =========
+  const deptSectionTitle = document.createElement('div');
+  deptSectionTitle.className = 'section-title';
+  deptSectionTitle.innerText = '部门维度';
+  root.appendChild(deptSectionTitle);
+  
+  // 三个部门环形图（一级、二级、三级）—— 三级标题已删除“(应用)”
+  const ringRow = document.createElement('div'); ringRow.className='row';
+  const ringConfigs = [
+    { title:'一级部门 TOP5 token消耗占比', id:'chRing_dept', dataFn:()=>getTopDeptsUsage(range), valueKey:'usage', unit:'tokens' },
+    { title:'二级部门 TOP10 token消耗占比', id:'chRing_sub', dataFn:()=>getSubDeptsUsage(range), valueKey:'usage', unit:'tokens' },
+    { title:'三级部门 TOP10 token消耗占比', id:'chRing_app', dataFn:()=>getAppsUsage(range), valueKey:'usage', unit:'tokens' }
+  ];
+  ringConfigs.forEach(cfg=>{
+    const col = document.createElement('div'); col.className='col'; col.style.minWidth='320px';
+    col.innerHTML = `<div class="card"><div class="card-hd"><h3>${cfg.title}</h3></div><div class="card-bd"><div class="chart-sm" id="${cfg.id}"></div></div></div>`;
+    ringRow.appendChild(col);
+  });
+  root.appendChild(ringRow);
+  
+  // ========= 产品维度区域 =========
+  const productSectionTitle = document.createElement('div');
+  productSectionTitle.className = 'section-title';
+  productSectionTitle.innerText = '产品维度';
+  root.appendChild(productSectionTitle);
+  
+  const productRingRow = document.createElement('div'); productRingRow.className='row';
+  const productCol = document.createElement('div'); productCol.className='col'; productCol.style.minWidth='360px';
+  productCol.innerHTML = `<div class="card"><div class="card-hd"><h3>📦 产品 TOP10 token消耗占比</h3></div><div class="card-bd"><div class="chart-sm" id="chRing_product"></div></div></div>`;
+  productRingRow.appendChild(productCol);
+  root.appendChild(productRingRow);
+  
+  // 延迟渲染图表，确保DOM已加载
+  setTimeout(()=>{
+    // 趋势图
+    const trendDom = document.getElementById('chTrend');
+    if(trendDom && window.echarts){
+      const ch = echarts.init(trendDom, STATE.theme==='dark'?'dark':null);
+      STATE.charts.push(ch);
+      ch.setOption({
+        tooltip:{trigger:'axis'},
+        legend:{data:['费用(元)','用量(token)'], right:20, top:0},
+        grid:{left:60, right:60, top:40, bottom:30},
+        xAxis:{type:'category', data:trendData.xAxis, boundaryGap:false},
+        yAxis:[
+          {type:'value', name:'费用 (元)', axisLabel:{formatter:'¥{value}'}},
+          {type:'value', name:'用量 (token)', axisLabel:{formatter: (v)=>v>=1000000? (v/1000000).toFixed(1)+'M' : v>=1000? (v/1000).toFixed(0)+'k' : v }}
+        ],
+        series:[
+          {name:'费用(元)', type:'line', smooth:true, data:trendData.costData, yAxisIndex:0, itemStyle:{color:'#5b6cff'}, areaStyle:{opacity:0.1}},
+          {name:'用量(token)', type:'line', smooth:true, data:trendData.usageData, yAxisIndex:1, itemStyle:{color:'#10b981'}, areaStyle:{opacity:0.05}}
+        ]
+      });
+    }
+    // 部门维度环形图（token 用量）
+    ringConfigs.forEach(cfg=>{
+      const dom = document.getElementById(cfg.id);
+      if(dom && window.echarts){
+        const data = cfg.dataFn();
+        const ch = echarts.init(dom, STATE.theme==='dark'?'dark':null);
+        STATE.charts.push(ch);
+        ch.setOption({
+          tooltip:{trigger:'item', formatter: (params)=>{
+            return `${params.name}<br/>用量: ${fmtNumber(params.value)} tokens (${params.percent}%)`;
+          }},
+          legend:{bottom:0, left:'center', type:'scroll', textStyle:{fontSize:11}},
+          series:[{ type:'pie', radius:['40%','70%'], center:['50%','42%'], data: data.map(d=>({name:d.name, value:d.usage})) }]
+        });
+      }
+    });
+    // 产品维度环形图
+    const productDom = document.getElementById('chRing_product');
+    if(productDom && window.echarts){
+      const productData = getProductsUsage(range);
+      const chProd = echarts.init(productDom, STATE.theme==='dark'?'dark':null);
+      STATE.charts.push(chProd);
+      chProd.setOption({
+        tooltip:{trigger:'item', formatter: (params)=>{
+          return `${params.name}<br/>用量: ${fmtNumber(params.value)} tokens (${params.percent}%)`;
+        }},
+        legend:{bottom:0, left:'center', type:'scroll', textStyle:{fontSize:11}},
+        series:[{ type:'pie', radius:['40%','70%'], center:['50%','42%'], data: productData.map(d=>({name:d.name, value:d.usage})) }]
+      });
+    }
+  }, 30);
+}
+
+function buildTopbar(){
+  const bar = document.createElement('header'); bar.className='topbar';
+  bar.innerHTML = `<div class="page-title"><h1>总览看板</h1><span class="sub">集团 MaaS 用量全景 · 灵活时间窗</span></div><div class="right"></div>`;
+  const rightDiv = bar.querySelector('.right');
+  
+  const btnGrp = document.createElement('div'); btnGrp.className='btn-grp';
+  const presets = ['1h','3h','6h','1d','7d','30d'];
+  const presetLabels = { '1h':'近1h','3h':'近3h','6h':'近6h','1d':'近1d','7d':'近7d','30d':'近30d' };
+  presets.forEach(p=>{
+    const btn = document.createElement('button');
+    btn.innerText = presetLabels[p];
+    if(STATE.timeMode==='preset' && STATE.presetKey===p) btn.classList.add('active');
+    btn.onclick = ()=>{
+      STATE.timeMode='preset'; STATE.presetKey=p; STATE.customStart=STATE.customEnd=null;
+      render();
+    };
+    btnGrp.appendChild(btn);
+  });
+  rightDiv.appendChild(btnGrp);
+  
+  const dateDiv = document.createElement('div'); dateDiv.className='date-picker-group';
+  const startInput = document.createElement('input'); startInput.type='date'; startInput.className='input'; startInput.style.width='140px';
+  const endInput = document.createElement('input'); endInput.type='date'; endInput.className='input'; endInput.style.width='140px';
+  const applyBtn = document.createElement('button'); applyBtn.className='btn sm'; applyBtn.innerText='应用';
+  const resetBtn = document.createElement('button'); resetBtn.className='btn sm'; resetBtn.innerText='重置';
+  if(STATE.customStart) startInput.value = STATE.customStart.slice(0,10);
+  if(STATE.customEnd) endInput.value = STATE.customEnd.slice(0,10);
+  applyBtn.onclick = ()=>{
+    if(startInput.value && endInput.value){
+      STATE.timeMode='custom'; STATE.customStart=startInput.value+'T00:00'; STATE.customEnd=endInput.value+'T23:59'; STATE.presetKey=null;
+      render();
+    } else toast('请选择起止日期');
+  };
+  resetBtn.onclick = ()=>{ STATE.timeMode='preset'; STATE.presetKey='1d'; STATE.customStart=STATE.customEnd=null; render(); };
+  dateDiv.append(startInput, endInput, applyBtn, resetBtn);
+  rightDiv.appendChild(dateDiv);
+  
+  const themeBtn = document.createElement('button'); themeBtn.className='btn sm'; themeBtn.innerHTML=STATE.theme==='light'?'🌙':'☀️';
+  themeBtn.onclick = ()=>{ STATE.theme = STATE.theme==='light'?'dark':'light'; applyTheme(); render(); };
+  const refreshBtn = document.createElement('button'); refreshBtn.className='btn sm'; refreshBtn.innerText='🔄 刷新';
+  refreshBtn.onclick = ()=>render();
+  rightDiv.appendChild(themeBtn); rightDiv.appendChild(refreshBtn);
+  return bar;
+}
+
+function renderSidebar(){
+  const aside=document.createElement('aside'); aside.className='sidebar';
+  aside.innerHTML = `
+    <div class="logo"><div class="logo-mark"><svg viewBox="0 0 40 40"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5b6cff"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs><rect width="36" height="36" x="2" y="2" rx="9" fill="url(#lg)"/><circle cx="20" cy="20" r="3.2" fill="#fff"/></svg></div><div class="logo-txt"><div class="logo-title">集团模型网关</div><div class="logo-sub">用量管理 · MaaS</div></div></div>
+    <div class="group">主导航</div>
+    <nav><div class="navItem active"><span class="ico">📊</span><span class="label">总览看板</span></div></nav>
+    <div class="side-footer"><div>© 2026 MaaS Platform</div><div>v2.0 · 部门+产品维度</div></div>
+  `;
+  return aside;
+}
+
+function render(){
+  if(STATE.charts.length){
+    STATE.charts.forEach(c=>{ try{c.dispose();}catch(e){} });
+    STATE.charts = [];
+  }
+  const appDiv = document.getElementById('app');
+  appDiv.innerHTML = '';
+  appDiv.appendChild(renderSidebar());
+  appDiv.appendChild(buildTopbar());
+  const main = document.createElement('div'); main.className='main';
+  appDiv.appendChild(main);
+  renderOverview(main);
+}
+
+applyTheme();
+render();
+window.addEventListener('resize', ()=> STATE.charts.forEach(c=>c?.resize?.()));
+</script>
+</body>
+</html>
