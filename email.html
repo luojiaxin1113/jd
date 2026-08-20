@@ -1,0 +1,584 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>邮件审批台账系统</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;--card:#ffffff;--text:#172033;--muted:#6b7280;--line:#e6eaf2;
+      --blue:#2563eb;--blue2:#1d4ed8;--green:#16a34a;--orange:#f59e0b;--red:#dc2626;
+      --purple:#7c3aed;--gray:#64748b;--shadow:0 12px 30px rgba(15,23,42,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Microsoft YaHei", "PingFang SC", Arial, sans-serif;background:linear-gradient(180deg,#eef4ff 0,#f7f8fb 220px,var(--bg) 100%);color:var(--text)}
+    .wrap{max-width:1280px;margin:0 auto;padding:24px}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
+    .title h1{margin:0 0 8px;font-size:30px;letter-spacing:.5px}
+    .title p{margin:0;color:var(--muted);line-height:1.55}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    button,.btn{border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700;font-size:14px;transition:.15s;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+    button:hover,.btn:hover{transform:translateY(-1px);filter:brightness(.98)}
+    .primary{background:var(--blue);color:white}.primary:hover{background:var(--blue2)}
+    .secondary{background:#eaf0ff;color:#1d4ed8}.ghost{background:#fff;color:#334155;border:1px solid var(--line)}button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+    .danger{background:#fee2e2;color:#b91c1c}.success{background:#dcfce7;color:#166534}.dark{background:#111827;color:white}
+    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;position:relative;overflow:hidden}
+    .card:after{content:"";position:absolute;right:-22px;top:-26px;width:90px;height:90px;border-radius:50%;background:rgba(37,99,235,.08)}
+    .card .label{color:var(--muted);font-size:13px;margin-bottom:8px}.card .num{font-size:32px;font-weight:900}.card .hint{font-size:12px;color:var(--muted);margin-top:5px}
+    .main{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;min-width:0}
+    .panel h2{font-size:18px;margin:0 0 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .alert-list{display:flex;flex-direction:column;gap:10px;max-height:620px;overflow:auto;padding-right:4px}
+    .alert{border:1px solid #fde68a;background:#fffbeb;border-left:5px solid var(--orange);border-radius:14px;padding:12px}
+    .alert.dangerAlert{border-color:#fecaca;background:#fff1f2;border-left-color:var(--red)}
+    .alert .subject{font-weight:900;margin-bottom:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}.alert .meta{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:#475569}.alert .meta span{background:white;border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:4px 8px}
+    .filters{display:grid;grid-template-columns:1.3fr repeat(5, minmax(105px,.75fr));gap:10px;margin-bottom:12px}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 11px;font:inherit;background:white;color:var(--text);outline:none}
+    input:focus,select:focus,textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    table{width:100%;min-width:1380px;table-layout:fixed;border-collapse:separate;border-spacing:0 10px}
+    th{font-size:12px;color:var(--muted);text-align:left;font-weight:800;padding:0 8px 4px;line-height:1.25;white-space:normal}
+    td{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:11px 9px;vertical-align:middle;font-size:14px;overflow-wrap:anywhere;line-height:1.45}
+    td:first-child{border-left:1px solid var(--line);border-radius:14px 0 0 14px}td:last-child{border-right:1px solid var(--line);border-radius:0 14px 14px 0}
+    .subjectCell{font-weight:900;max-width:250px;line-height:1.38;display:block;white-space:normal;overflow:visible;word-break:break-word;border-radius:10px;padding:7px 10px;border:1px solid transparent}.subjectCell.red{background:#fee2e2;color:#991b1b;border-color:#fecaca}.subjectCell.yellow{background:#fef3c7;color:#92400e;border-color:#fde68a}.subjectCell.blue{background:#dbeafe;color:#1e40af;border-color:#bfdbfe}.priorityLegend{display:block;margin-top:4px;font-size:11px;font-weight:700;color:#64748b;line-height:1.4}.legendDot{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 3px 0 6px}.legendDot.red{background:#dc2626}.legendDot.yellow{background:#f59e0b}.legendDot.blue{background:#2563eb}.plainText{color:#334155;background:#fff;border:0;padding:0;font-weight:700;white-space:normal}.small{font-size:12px;color:var(--muted);margin-top:5px;white-space:normal;overflow:visible;word-break:break-word;line-height:1.45}
+    .tag{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:12px;font-weight:800;border:1px solid transparent;white-space:normal;max-width:100%;line-height:1.35}
+    .tag.green{background:#dcfce7;color:#166534}.tag.orange{background:#ffedd5;color:#9a3412}.tag.red{background:#fee2e2;color:#991b1b}.tag.blue{background:#dbeafe;color:#1e40af}.tag.gray{background:#f1f5f9;color:#475569}.tag.purple{background:#ede9fe;color:#5b21b6}.tag.yellow{background:#fef3c7;color:#92400e}.tag.cyan{background:#cffafe;color:#155e75}
+    .rowActions{display:grid;grid-template-columns:1fr;gap:5px}.rowActions button{padding:6px 7px;font-size:12px;border-radius:9px;justify-content:center;min-width:0}.inlineSelect{min-width:62px;width:62px;padding:5px 5px;border-radius:999px;font-size:12px;font-weight:800;color:#334155;background:#fff;text-align:center}
+    .flowLine{display:flex;gap:5px;flex-wrap:wrap;max-width:320px}th:nth-child(1),td:nth-child(1){width:78px}th:nth-child(2),td:nth-child(2){width:270px}th:nth-child(3),td:nth-child(3){width:120px}th:nth-child(4),td:nth-child(4){width:76px}th:nth-child(5),td:nth-child(5){width:72px}th:nth-child(6),td:nth-child(6){width:320px}th:nth-child(7),td:nth-child(7){width:78px}th:nth-child(8),td:nth-child(8){width:58px}th:nth-child(9),td:nth-child(9){width:100px}th:nth-child(10),td:nth-child(10){width:112px;white-space:nowrap}th:nth-child(11),td:nth-child(11){width:150px;white-space:nowrap}.node{font-size:12px;border-radius:999px;padding:4px 7px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}.node.done{background:#dcfce7;color:#166534;border-color:#bbf7d0}.node.current{background:#ffedd5;color:#9a3412;border-color:#fed7aa;font-weight:900}
+    .tableWrap{overflow:auto}.logPage{display:none}.logPage.show{display:block}.logTools{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}.logTools h2{margin:0}.logTable{min-width:920px}.logSubject{font-weight:800;color:#172033}.logDetail{color:#475569;line-height:1.5}.empty{color:var(--muted);text-align:center;padding:30px;border:1px dashed var(--line);border-radius:16px;background:#fbfdff}
+    .modalMask{position:fixed;inset:0;background:rgba(15,23,42,.48);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}.modalMask.show{display:flex}
+    .modal{background:white;border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,.26);max-width:900px;width:100%;max-height:92vh;overflow:auto;border:1px solid var(--line)}
+    .modalHead{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:white;z-index:1}.modalHead h3{margin:0;font-size:20px}.modalBody{padding:18px 20px}.formGrid{display:grid;grid-template-columns:1fr 190px 140px 150px;gap:12px}.formGrid .full{grid-column:1/-1}.formGrid label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin-bottom:6px}.modalFoot{display:flex;justify-content:space-between;gap:10px;padding:16px 20px;border-top:1px solid var(--line);background:#fafafa;border-radius:0 0 22px 22px}.footRight{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .flowEditor{border:1px solid var(--line);border-radius:16px;padding:12px;background:#fbfdff}.flowHelp{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 10px}.editNodes{display:flex;flex-direction:column;gap:8px}.editNode{display:grid;grid-template-columns:34px 1fr 90px 42px;gap:8px;align-items:center;background:white;border:1px solid var(--line);border-radius:12px;padding:8px}.checkBtn{width:26px;height:26px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1}.checkBtn.checked{background:var(--green);color:white;border-color:var(--green)}.mini{padding:7px 9px;font-size:12px;border-radius:9px}.tools{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}.importInput{display:none}.note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:10px}
+    .toast{position:fixed;right:20px;bottom:20px;background:#111827;color:white;border-radius:14px;padding:12px 16px;box-shadow:var(--shadow);display:none;z-index:50}.toast.show{display:block;animation:fade 2.2s ease forwards}@keyframes fade{0%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(8px)}}
+    @media(max-width:1050px){.main{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.formGrid{grid-template-columns:1fr 1fr}table{min-width:1380px}.tableWrap{overflow:auto}}
+    @media(max-width:640px){.wrap{padding:14px}.cards{grid-template-columns:1fr}.filters,.formGrid{grid-template-columns:1fr}header{flex-direction:column}.actions{justify-content:flex-start}.modalFoot{flex-direction:column}.footRight{justify-content:flex-start}}
+    @media print{.actions,.filters,.rowActions,.modalMask,.tools{display:none!important}body{background:white}.wrap{max-width:none}.main{grid-template-columns:1fr}.panel{box-shadow:none}.alert-list{max-height:none}.card{box-shadow:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>📬 邮件审批台账系统</h1>
+        <p>用于每天维护审批邮件、自动识别当前卡点、提醒超时未完成事项。数据保存在本机浏览器 LocalStorage 中。</p>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="openModal()">＋ 新增邮件</button><button class="ghost" onclick="showLogPage()">操作日志</button><button id="undoBtn" class="ghost" onclick="undoLast()" disabled>撤回</button>
+        <button class="secondary" onclick="exportJSON()">导出备份</button>
+        <button class="ghost" onclick="document.getElementById('importFile').click()">导入备份</button>
+        <button class="ghost" onclick="exportCSV()">导出CSV</button>
+        <input id="importFile" class="importInput" type="file" accept="application/json,.json" onchange="importJSON(event)">
+      </div>
+    </header>
+
+    <section class="cards">
+      <div class="card"><div class="label">待审批</div><div id="statPending" class="num">0</div><div class="hint">未走完流程的邮件</div></div>
+      <div class="card"><div class="label">已完成</div><div id="statDone" class="num">0</div><div class="hint">全部节点已完成</div></div>
+      <div class="card"><div class="label">今日发送</div><div id="statToday" class="num">0</div><div class="hint">发送时间为今天</div></div>
+      <div class="card"><div class="label">超时邮件</div><div id="statOverdue" class="num">0</div><div class="hint">未完成且停留 ≥ 3 天</div></div>
+    </section>
+
+    <section class="main">
+      <aside class="panel">
+        <h2>⚠ 卡点提醒 <span class="tag red" id="alertCount">0</span></h2>
+        <div id="alerts" class="alert-list"></div>
+        <div class="note">提示：超时规则默认为未完成且距离发送时间满 3 天。红色代表 ≥ 3 天，黄色代表 2 天。</div>
+      </aside>
+
+      <section class="panel">
+        <h2>📋 邮件列表 <span class="tag blue" id="listCount">0</span></h2>
+        <div class="filters">
+          <input id="q" placeholder="搜索邮件主题 / 分类 / 备注 / 当前卡点" oninput="render()">
+          <select id="filterOwner" onchange="render()"><option value="">全部卡点</option></select>
+          <select id="filterStatus" onchange="render()"><option value="">全部状态</option><option value="pending">审批中</option><option value="unsent">未发送</option><option value="done">已完成</option></select>
+          <select id="filterPriority" onchange="render()"><option value="">全部优先级</option><option>普通</option><option>重要</option><option>紧急</option></select>
+          <select id="filterCategory" onchange="render()"><option value="">全部分类</option></select>
+          <select id="filterSpecial" onchange="render()"><option value="">全部邮件</option><option value="today">只看今日发送</option><option value="overdue">只看超时</option></select>
+        </div>
+        <datalist id="categoryOptions"></datalist>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>状态</th><th>邮件主题<span class="priorityLegend"><span class="legendDot red"></span>红=紧急 <span class="legendDot yellow"></span>黄=重要 <span class="legendDot blue"></span>蓝=普通</span></th><th>当前卡点</th><th>卡点原因</th><th>是否已催办</th><th>流程</th><th>操作</th><th>停留</th><th>分类</th><th>发送日期</th><th>更新日期</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div id="empty" class="empty" style="display:none">暂无记录，点击右上角“新增邮件”开始维护。</div>
+      </section>
+    </section>
+
+    <section id="logPage" class="panel logPage">
+      <div class="logTools">
+        <h2>🧾 操作日志 <span class="tag blue" id="logCount">0</span></h2>
+        <div class="actions">
+          <input id="logSearch" placeholder="搜索主题 / 操作 / 内容" oninput="renderLogs()">
+          <button class="ghost" onclick="showMainPage()">返回邮件列表</button>
+          <button class="danger" onclick="clearLogs()">清空日志</button>
+        </div>
+      </div>
+      <div class="tableWrap">
+        <table class="logTable">
+          <thead><tr><th>时间</th><th>操作</th><th>邮件主题</th><th>变更内容</th></tr></thead>
+          <tbody id="logTbody"></tbody>
+        </table>
+      </div>
+      <div id="logEmpty" class="empty" style="display:none">暂无操作日志。</div>
+    </section>
+  </div>
+
+  <div id="modalMask" class="modalMask" onclick="maskClose(event)">
+    <div class="modal">
+      <div class="modalHead">
+        <h3 id="modalTitle">新增邮件</h3>
+        <button class="ghost" onclick="closeModal()">关闭</button>
+      </div>
+      <div class="modalBody">
+        <div class="formGrid">
+          <div>
+            <label>邮件主题 *</label>
+            <input id="subject" placeholder="例如：GLM折扣审批">
+          </div>
+          <div>
+            <label>计划/发送日期 *</label>
+            <input id="sentAt" type="date">
+          </div>
+          <div>
+            <label>邮件状态</label>
+            <select id="mailStatus"><option value="sent">已发送</option><option value="unsent">未发送</option></select>
+          </div>
+          <div>
+            <label>优先级</label>
+            <select id="priority"><option>普通</option><option>重要</option><option>紧急</option></select>
+          </div>
+          <div>
+            <label>分类</label>
+            <input id="category" placeholder="请输入分类名称">
+          </div>
+          <div>
+            <label>是否已催办</label>
+            <select id="reminded"><option value="no">否</option><option value="yes">是</option></select>
+          </div>
+          <div>
+            <label>最后更新时间</label>
+            <input id="updatedAtView" disabled placeholder="保存后自动生成">
+          </div>
+          <div class="full">
+            <label>备注</label>
+            <textarea id="remark" rows="3" placeholder="例如：曹鹏今天休假 / 等待供应商补材料 / 已催办"></textarea>
+          </div>
+          <div class="full flowEditor">
+            <p class="flowHelp">审批流程：勾选代表该节点已审批。系统会自动把第一个未勾选节点识别为“当前卡点”；全部勾选后自动标记为已完成。</p>
+            <div id="editNodes" class="editNodes"></div>
+            <div class="tools">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="secondary mini" onclick="addNode()">＋ 增加节点</button>
+                <button class="ghost mini" onclick="resetDefaultFlow()">恢复默认流程</button>
+                <button class="success mini" onclick="completeAllNodes()">全部完成</button>
+              </div>
+              <button class="danger mini" onclick="clearAllChecks()">取消全部完成</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modalFoot">
+        <button id="deleteInModal" class="danger" style="display:none" onclick="deleteCurrent()">删除这封邮件</button>
+        <div class="footRight">
+          <button class="ghost" onclick="closeModal()">取消</button>
+          <button class="primary" onclick="saveRecord()">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+<script>
+const STORAGE_KEY = 'mail_approval_ledger_v1';
+const LOG_STORAGE_KEY = 'mail_approval_logs_v1';
+const DEFAULT_FLOW = ['卢璐','龚义成','张晗','薛刚','曹鹏','林枫','刘佳/唐瑞苓/王梓睿'];
+let records = [];
+let operationLogs = [];
+let undoStack = [];
+let editingId = null;
+let editingFlow = [];
+
+function todayStr(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function formatDateTime(value){
+  if(!value) return '-';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return String(value);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  const h = String(d.getHours()).padStart(2,'0');
+  const min = String(d.getMinutes()).padStart(2,'0');
+  return `${y}-${m}-${day} ${h}:${min}`;
+}
+function uid(){ return 'm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+function safe(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function load(){
+  try{ records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch(e){ records = []; }
+  try{ operationLogs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY) || '[]'); }
+  catch(e){ operationLogs = []; }
+  if(!Array.isArray(records)) records = [];
+  if(!Array.isArray(operationLogs)) operationLogs = [];
+  records = records.map(r => ({...r, mailStatus: r.mailStatus || 'sent', reminded: r.reminded === true || r.reminded === 'yes' || r.reminded === '已催办', updatedAt: r.updatedAt || r.createdAt || new Date().toISOString(), history: Array.isArray(r.history) ? r.history : [], flow: normalizeFlow(r.flow)}));
+  if(records.length || operationLogs.length) save();
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(operationLogs));
+}
+function captureUndo(label){
+  undoStack.unshift({label, records:JSON.stringify(records), operationLogs:JSON.stringify(operationLogs)});
+  undoStack = undoStack.slice(0, 20);
+  updateUndoButton();
+}
+function updateUndoButton(){
+  const btn = document.getElementById('undoBtn');
+  if(!btn) return;
+  btn.disabled = undoStack.length === 0;
+  btn.textContent = undoStack.length ? `撤回：${undoStack[0].label}` : '撤回';
+}
+function undoLast(){
+  const snapshot = undoStack.shift();
+  if(!snapshot){ toast('暂无可撤回操作'); return; }
+  try{
+    records = JSON.parse(snapshot.records || '[]');
+    operationLogs = JSON.parse(snapshot.operationLogs || '[]');
+    records = records.map(r => ({...r, mailStatus: r.mailStatus || 'sent', reminded: r.reminded === true || r.reminded === 'yes' || r.reminded === '已催办', updatedAt: r.updatedAt || r.createdAt || new Date().toISOString(), history: Array.isArray(r.history) ? r.history : [], flow: normalizeFlow(r.flow)}));
+    save();
+    closeModal();
+    render();
+    if(document.getElementById('logPage').classList.contains('show')) renderLogs();
+    updateUndoButton();
+    toast(`已撤回：${snapshot.label}`);
+  } catch(e){
+    alert('撤回失败：历史快照异常');
+  }
+}
+
+function addLog(record, action, detail){
+  const log = {id:uid(), time:new Date().toISOString(), recordId:record?.id || '', subject:record?.subject || '全局操作', action, detail};
+  operationLogs.unshift(log);
+  operationLogs = operationLogs.slice(0, 500);
+  if(record){
+    if(!Array.isArray(record.history)) record.history = [];
+    record.history.unshift(log);
+    record.history = record.history.slice(0, 100);
+  }
+}
+function showLogPage(){
+  document.querySelector('.cards').style.display = 'none';
+  document.querySelector('.main').style.display = 'none';
+  document.getElementById('logPage').classList.add('show');
+  renderLogs();
+}
+function showMainPage(){
+  document.querySelector('.cards').style.display = '';
+  document.querySelector('.main').style.display = '';
+  document.getElementById('logPage').classList.remove('show');
+}
+function renderLogs(){
+  const q = (document.getElementById('logSearch')?.value || '').trim().toLowerCase();
+  const rows = operationLogs.filter(log => !q || [log.subject, log.action, log.detail, formatDateTime(log.time)].map(v => String(v || '').toLowerCase()).join(' ').includes(q));
+  const tbody = document.getElementById('logTbody');
+  const empty = document.getElementById('logEmpty');
+  document.getElementById('logCount').textContent = rows.length;
+  empty.style.display = rows.length ? 'none' : 'block';
+  tbody.innerHTML = rows.map(log => `<tr><td>${safe(formatDateTime(log.time))}</td><td><span class="tag blue">${safe(log.action)}</span></td><td><div class="logSubject">${safe(log.subject || '-')}</div></td><td><div class="logDetail">${safe(log.detail || '-')}</div></td></tr>`).join('');
+}
+function clearLogs(){
+  if(!operationLogs.length){ toast('暂无可清空的日志'); return; }
+  if(!confirm('确认清空全部操作日志？此操作不会删除邮件记录。')) return;
+  captureUndo('清空日志');
+  operationLogs = [];
+  records.forEach(r => r.history = []);
+  save(); renderLogs(); toast('日志已清空');
+}
+
+function normalizeFlow(flow){
+  if(!Array.isArray(flow) || !flow.length) return DEFAULT_FLOW.map(name => ({name, done:false}));
+  return flow.map(n => typeof n === 'string' ? ({name:n, done:false}) : ({name:n.name || '', done:!!n.done}))
+    .map(n => ({name:n.name.trim(), done:n.done}))
+    .filter(n => n.name);
+}
+function isMailSent(r){ return (r.mailStatus || 'sent') === 'sent'; }
+function getStatus(r){ if(!isMailSent(r)) return 'unsent'; return r.flow.length > 0 && r.flow.every(n => n.done) ? 'done' : 'pending'; }
+function getCurrentOwner(r){ if(!isMailSent(r)) return '我方未发送邮件'; const n = r.flow.find(x => !x.done); return n ? n.name : '完成'; }
+function getBlockReason(r){ return isMailSent(r) ? '已发送' : '未发送'; }
+function daysSince(dateStr){
+  if(!dateStr) return 0;
+  const start = new Date(dateStr + 'T00:00:00');
+  const now = new Date(todayStr() + 'T00:00:00');
+  const diff = Math.floor((now - start) / 86400000);
+  return Math.max(0, diff);
+}
+function isToday(dateStr){ return dateStr === todayStr(); }
+function isOverdue(r){ return getStatus(r) !== 'done' && daysSince(r.sentAt) >= 3; }
+function priorityClass(p){ return p === '紧急' ? 'red' : p === '重要' ? 'yellow' : 'blue'; }
+function statusTag(r){ const status = getStatus(r); if(status === 'done') return '<span class="tag green">√</span>'; if(status === 'unsent') return '<span class="tag cyan">待发送</span>'; return '<span class="tag orange">审批中</span>'; }
+function delayTag(days, done){
+  return `<span class="plainText">${done ? '已完成' : days + '天'}</span>`;
+}
+
+function renderOwnerOptions(){
+  const sel = document.getElementById('filterOwner');
+  const current = sel.value;
+  const owners = new Set(DEFAULT_FLOW);
+  records.forEach(r => r.flow.forEach(n => owners.add(n.name)));
+  sel.innerHTML = '<option value="">全部卡点</option>' + [...owners].filter(Boolean).map(o => `<option>${safe(o)}</option>`).join('');
+  sel.value = [...owners].includes(current) ? current : '';
+}
+function renderCategoryOptions(){
+  const sel = document.getElementById('filterCategory');
+  if(!sel) return;
+  const current = sel.value;
+  const categories = new Set();
+  records.forEach(r => { if((r.category || '').trim()) categories.add(r.category.trim()); });
+  const list = [...categories].sort((a,b) => a.localeCompare(b, 'zh-CN'));
+  sel.innerHTML = '<option value="">全部分类</option>' + list.map(c => `<option value="${safe(c)}">${safe(c)}</option>`).join('');
+  sel.value = list.includes(current) ? current : '';
+}
+function filtered(){
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const owner = document.getElementById('filterOwner').value;
+  const status = document.getElementById('filterStatus').value;
+  const priority = document.getElementById('filterPriority').value;
+  const category = document.getElementById('filterCategory').value;
+  const special = document.getElementById('filterSpecial').value;
+  return records.filter(r => {
+    const searchable = [r.subject, r.category, r.remark, r.sentAt, r.priority, getBlockReason(r), getCurrentOwner(r), r.reminded ? '是' : '否', formatDateTime(r.updatedAt || r.createdAt)].map(v => String(v || '').toLowerCase()).join(' ');
+    if(q && !searchable.includes(q)) return false;
+    if(owner && getCurrentOwner(r) !== owner) return false;
+    if(status && getStatus(r) !== status) return false;
+    if(priority && r.priority !== priority) return false;
+    if(category && r.category !== category) return false;
+    if(special === 'today' && !isToday(r.sentAt)) return false;
+    if(special === 'overdue' && !isOverdue(r)) return false;
+    return true;
+  }).sort((a,b) => {
+    const sa = getStatus(a), sb = getStatus(b);
+    if(sa !== sb) return sa === 'pending' ? -1 : 1;
+    const pa = ({'紧急':3,'重要':2,'普通':1}[a.priority]||0), pb = ({'紧急':3,'重要':2,'普通':1}[b.priority]||0);
+    if(pa !== pb) return pb-pa;
+    return (b.sentAt || '').localeCompare(a.sentAt || '');
+  });
+}
+function render(){
+  renderOwnerOptions();
+  renderCategoryOptions();
+  const pending = records.filter(r => getStatus(r)!=='done');
+  const done = records.filter(r => getStatus(r)==='done');
+  const today = records.filter(r => isToday(r.sentAt));
+  const overdue = records.filter(r => isOverdue(r));
+  document.getElementById('statPending').textContent = pending.length;
+  document.getElementById('statDone').textContent = done.length;
+  document.getElementById('statToday').textContent = today.length;
+  document.getElementById('statOverdue').textContent = overdue.length;
+  renderAlerts(overdue.length ? overdue : pending.filter(r => daysSince(r.sentAt) >= 2));
+
+  const rows = filtered();
+  document.getElementById('listCount').textContent = rows.length;
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+  empty.style.display = rows.length ? 'none' : 'block';
+  tbody.innerHTML = rows.map(r => {
+    const doneFlag = getStatus(r)==='done';
+    const days = daysSince(r.sentAt);
+    const flow = r.flow.map(n => `<span class="node ${n.done?'done':''} ${!doneFlag && !n.done && getCurrentOwner(r)===n.name ? 'current':''}">${n.done?'✔':'○'} ${safe(n.name)}</span>`).join('');
+    return `<tr>
+      <td>${statusTag(r)}</td>
+      <td><div class="subjectCell ${priorityClass(r.priority)}">${safe(r.subject)}</div><div class="small">备注：${safe(r.remark || '无')}</div></td>
+      <td>${doneFlag ? '<span class="tag green">完成</span>' : `<span class="tag purple">${safe(getCurrentOwner(r))}</span>`}</td>
+      <td><select class="inlineSelect" onchange="updateMailStatus('${r.id}', this.value)"><option value="sent" ${isMailSent(r) ? 'selected' : ''}>已发送</option><option value="unsent" ${!isMailSent(r) ? 'selected' : ''}>未发送</option></select></td>
+      <td><select class="inlineSelect" onchange="updateReminded('${r.id}', this.value)"><option value="yes" ${r.reminded ? 'selected' : ''}>是</option><option value="no" ${!r.reminded ? 'selected' : ''}>否</option></select></td>
+      <td><div class="flowLine">${flow}</div></td>
+      <td><div class="rowActions"><button class="secondary" onclick="openModal('${r.id}')">编辑</button><button class="success" onclick="advance('${r.id}')">推进</button><button class="danger" onclick="removeRecord('${r.id}')">删除</button></div></td>
+      <td>${delayTag(days, doneFlag)}</td>
+      <td><span class="plainText">${safe(r.category || '-')}</span></td>
+      <td>${safe(r.sentAt || '-')}</td>
+      <td>${safe(formatDateTime(r.updatedAt || r.createdAt))}</td>
+    </tr>`;
+  }).join('');
+}
+function renderAlerts(list){
+  const box = document.getElementById('alerts');
+  const top = [...list].sort((a,b) => daysSince(b.sentAt)-daysSince(a.sentAt)).slice(0,10);
+  document.getElementById('alertCount').textContent = top.length;
+  if(!top.length){ box.innerHTML = '<div class="empty">暂无明显卡点。未完成邮件会继续在列表中展示。</div>'; return; }
+  box.innerHTML = top.map(r => {
+    const days = daysSince(r.sentAt);
+    return `<div class="alert ${days>=3?'dangerAlert':''}">
+      <div class="subject">${safe(r.subject)}</div>
+      <div class="meta"><span>已停留：${days}天</span><span>卡点原因：${safe(getBlockReason(r))}</span><span>当前卡点：${safe(getCurrentOwner(r))}</span><span>${safe(r.priority||'普通')}</span><span>${safe(r.category||'-')}</span><span>${r.reminded ? '是' : '否'}</span><span>更新：${safe(formatDateTime(r.updatedAt || r.createdAt))}</span></div>
+      ${r.remark ? `<div class="small" style="margin-top:8px">${safe(r.remark)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderEditNodes(){
+  const box = document.getElementById('editNodes');
+  box.innerHTML = editingFlow.map((n,i) => `<div class="editNode">
+    <button class="checkBtn ${n.done?'checked':''}" onclick="toggleNode(${i})" title="切换是否完成">${n.done?'✔':'○'}</button>
+    <input value="${safe(n.name)}" oninput="editingFlow[${i}].name=this.value" placeholder="审批人/节点名称">
+    <button class="ghost mini" onclick="moveNode(${i},-1)">上移</button>
+    <button class="danger mini" onclick="deleteNode(${i})">×</button>
+  </div>`).join('');
+}
+function openModal(id){
+  editingId = id || null;
+  const r = records.find(x => x.id === id);
+  document.getElementById('modalTitle').textContent = r ? '编辑邮件' : '新增邮件';
+  document.getElementById('deleteInModal').style.display = r ? 'inline-flex' : 'none';
+  document.getElementById('subject').value = r?.subject || '';
+  document.getElementById('sentAt').value = r?.sentAt || todayStr();
+  document.getElementById('mailStatus').value = r?.mailStatus || 'sent';
+  document.getElementById('priority').value = r?.priority || '普通';
+  document.getElementById('category').value = r?.category || '';
+  document.getElementById('reminded').value = r?.reminded ? 'yes' : 'no';
+  document.getElementById('updatedAtView').value = r ? formatDateTime(r.updatedAt || r.createdAt) : '保存后自动生成';
+  document.getElementById('remark').value = r?.remark || '';
+  editingFlow = normalizeFlow(r?.flow || DEFAULT_FLOW);
+  renderEditNodes();
+  document.getElementById('modalMask').classList.add('show');
+  setTimeout(()=>document.getElementById('subject').focus(), 50);
+}
+function closeModal(){ document.getElementById('modalMask').classList.remove('show'); }
+function maskClose(e){ if(e.target.id === 'modalMask') closeModal(); }
+function toggleNode(i){ editingFlow[i].done = !editingFlow[i].done; renderEditNodes(); }
+function addNode(){ editingFlow.push({name:'新审批人', done:false}); renderEditNodes(); }
+function deleteNode(i){ editingFlow.splice(i,1); renderEditNodes(); }
+function moveNode(i,dir){ const j=i+dir; if(j<0||j>=editingFlow.length) return; [editingFlow[i],editingFlow[j]]=[editingFlow[j],editingFlow[i]]; renderEditNodes(); }
+function resetDefaultFlow(){ if(confirm('确认恢复为默认审批流程？当前流程节点会被替换。')){ editingFlow = DEFAULT_FLOW.map(name=>({name,done:false})); renderEditNodes(); } }
+function completeAllNodes(){ editingFlow.forEach(n=>n.done=true); renderEditNodes(); }
+function clearAllChecks(){ editingFlow.forEach(n=>n.done=false); renderEditNodes(); }
+function saveRecord(){
+  const subject = document.getElementById('subject').value.trim();
+  const sentAt = document.getElementById('sentAt').value;
+  if(!subject){ alert('请填写邮件主题'); return; }
+  if(!sentAt){ alert('请选择发送时间'); return; }
+  const flow = normalizeFlow(editingFlow).filter(n => n.name.trim()).map(n => ({name:n.name.trim(), done:!!n.done}));
+  if(!flow.length){ alert('审批流程至少需要一个节点'); return; }
+  const data = { subject, sentAt, mailStatus:document.getElementById('mailStatus').value, priority:document.getElementById('priority').value, category:document.getElementById('category').value.trim(), reminded:document.getElementById('reminded').value === 'yes', remark:document.getElementById('remark').value.trim(), flow };
+  if(editingId){
+    const idx = records.findIndex(r => r.id === editingId);
+    if(idx >= 0){
+      const old = records[idx];
+      const changes = [];
+      if(old.subject !== data.subject) changes.push(`主题：${old.subject || '-'} → ${data.subject}`);
+      if(old.sentAt !== data.sentAt) changes.push(`发送日期：${old.sentAt || '-'} → ${data.sentAt}`);
+      if((old.category || '') !== data.category) changes.push(`分类：${old.category || '-'} → ${data.category || '-'}`);
+      if((old.priority || '普通') !== data.priority) changes.push(`优先级：${old.priority || '普通'} → ${data.priority}`);
+      if((old.remark || '') !== data.remark) changes.push('备注已更新');
+      captureUndo('编辑邮件');
+      records[idx] = {...old, ...data, updatedAt:new Date().toISOString()};
+      addLog(records[idx], '编辑邮件', changes.length ? changes.join('；') : '保存邮件信息');
+    }
+  } else {
+    captureUndo('新增邮件');
+    const record = {id:uid(), ...data, history:[], createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()};
+    addLog(record, '新增邮件', `创建邮件，分类：${record.category || '-'}，状态：${record.mailStatus === 'sent' ? '已发送' : '未发送'}`);
+    records.push(record);
+  }
+  save(); closeModal(); render(); toast('已保存');
+}
+function deleteCurrent(){ if(editingId) removeRecord(editingId, true); }
+function removeRecord(id, fromModal=false){
+  const r = records.find(x => x.id === id);
+  if(!r) return;
+  if(!confirm(`确认删除：${r.subject}？`)) return;
+  captureUndo('删除邮件');
+  addLog(r, '删除邮件', '删除前记录已保留在操作日志中');
+  records = records.filter(x => x.id !== id);
+  save(); if(fromModal) closeModal(); render(); toast('已删除');
+}
+function updateReminded(id, value){
+  const r = records.find(x => x.id === id);
+  if(!r) return;
+  const oldText = r.reminded ? '是' : '否';
+  const newValue = value === 'yes';
+  const newText = newValue ? '是' : '否';
+  if(oldText === newText) return;
+  captureUndo('修改催办状态');
+  r.reminded = newValue;
+  r.updatedAt = new Date().toISOString();
+  addLog(r, '修改催办状态', `${oldText} → ${newText}`);
+  save(); render(); toast('催办状态已更新');
+}
+function updateMailStatus(id, value){
+  const r = records.find(x => x.id === id);
+  if(!r) return;
+  const oldText = getBlockReason(r);
+  captureUndo('修改卡点原因');
+  r.mailStatus = value === 'unsent' ? 'unsent' : 'sent';
+  const newText = getBlockReason(r);
+  if(oldText === newText) return;
+  r.updatedAt = new Date().toISOString();
+  addLog(r, '修改卡点原因', `${oldText} → ${newText}`);
+  save(); render(); toast('卡点原因已更新');
+}
+function advance(id){
+  const r = records.find(x => x.id === id);
+  if(!r) return;
+  const n = r.flow.find(x => !x.done);
+  if(!n){ toast('这封邮件已完成'); return; }
+  captureUndo('推进流程');
+  n.done = true;
+  r.updatedAt = new Date().toISOString();
+  addLog(r, '推进流程', `${n.name} 已完成`);
+  save(); render(); toast(`已推进：${n.name}`);
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify({version:2, exportedAt:new Date().toISOString(), records, operationLogs}, null, 2)], {type:'application/json'});
+  download(blob, `邮件审批台账备份_${todayStr()}.json`);
+}
+function importJSON(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      const imported = Array.isArray(data) ? data : data.records;
+      if(!Array.isArray(imported)) throw new Error('格式不正确');
+      if(!confirm(`将导入 ${imported.length} 条记录。是否覆盖当前数据？\n如需保留当前数据，请先导出备份。`)) return;
+      captureUndo('导入备份');
+      records = imported.map(r => ({...r, id:r.id || uid(), mailStatus:r.mailStatus || 'sent', reminded: r.reminded === true || r.reminded === 'yes' || r.reminded === '已催办', updatedAt: r.updatedAt || r.createdAt || new Date().toISOString(), history:Array.isArray(r.history) ? r.history : [], flow:normalizeFlow(r.flow)}));
+      operationLogs = Array.isArray(data.operationLogs) ? data.operationLogs : (Array.isArray(data.logs) ? data.logs : []);
+      addLog(null, '导入备份', '覆盖导入 ' + records.length + ' 条记录');
+      save(); render(); toast('导入完成');
+    } catch(err){ alert('导入失败：文件不是有效的台账 JSON 备份'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file, 'utf-8');
+}
+function exportCSV(){
+  const header = ['邮件主题','计划/发送日期','邮件状态','卡点原因','当前卡点','停留天数','优先级','分类','是否已催办','最后更新时间','状态','备注','审批流程'];
+  const lines = [header, ...records.map(r => [r.subject, r.sentAt, isMailSent(r)?'已发送':'未发送', getBlockReason(r), getCurrentOwner(r), daysSince(r.sentAt), r.priority, r.category, r.reminded ? '是' : '否', formatDateTime(r.updatedAt || r.createdAt), getStatus(r)==='done'?'已完成':(getStatus(r)==='unsent'?'待发送':'审批中'), r.remark||'', r.flow.map(n => `${n.done?'✔':'○'}${n.name}`).join(' -> ')])];
+  const csv = '\ufeff' + lines.map(row => row.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  download(new Blob([csv], {type:'text/csv;charset=utf-8'}), `邮件审批台账_${todayStr()}.csv`);
+}
+function download(blob, filename){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+}
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+function seedIfEmpty(){
+  if(records.length) return;
+  records = [
+    {id:uid(), subject:'示例：GLM折扣审批', sentAt:todayStr(), priority:'重要', category:'', reminded:false, remark:'示例数据，可编辑或删除。', flow:DEFAULT_FLOW.map((name,i)=>({name, done:i<2})), createdAt:new Date().toISOString()},
+    {id:uid(), subject:'示例：DeepSeek模型上线审批', sentAt:'2026-07-19', priority:'紧急', category:'', reminded:true, remark:'已催办卢璐。', flow:DEFAULT_FLOW.map((name,i)=>({name, done:i<0})), createdAt:new Date().toISOString()}
+  ];
+  save();
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+load(); seedIfEmpty(); render(); updateUndoButton();
+</script>
+</body>
+</html>
